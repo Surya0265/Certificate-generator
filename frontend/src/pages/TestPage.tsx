@@ -234,48 +234,23 @@ export const TestPage: React.FC = () => {
           <h3>Test Data</h3>
           {selectedLayoutData && selectedLayoutData.fields.length > 0 ? (
             selectedLayoutData.fields.map((field: any) => (
-              <div key={field.name} className="form-group" style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-                <div style={{ flex: 1 }}>
-                  <label>
-                    {field.name}
-                    {field.name === "Name" && (
-                      <span style={{ color: "#dc2626" }}>*</span>
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={`Enter ${field.name.toLowerCase()}`}
-                    value={testData[field.name] || ""}
-                    onChange={(e) =>
-                      handleTestDataChange(field.name, e.target.value)
-                    }
-                    disabled={loading}
-                    className="test-input"
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    const newTestData = { ...testData };
-                    delete newTestData[field.name];
-                    setTestData(newTestData);
-                  }}
+              <div key={field.name} className="form-group">
+                <label>
+                  {field.name}
+                  {field.name === "Name" && (
+                    <span style={{ color: "#dc2626" }}>*</span>
+                  )}
+                </label>
+                <input
+                  type="text"
+                  placeholder={`Enter ${field.name.toLowerCase()}`}
+                  value={testData[field.name] || ""}
+                  onChange={(e) =>
+                    handleTestDataChange(field.name, e.target.value)
+                  }
                   disabled={loading}
-                  style={{
-                    backgroundColor: "#dc2626",
-                    color: "white",
-                    padding: "8px 12px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    transition: "background-color 0.3s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b91c1c")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
-                  title="Clear this field"
-                >
-                  ✕
-                </button>
+                  className="test-input centered-input"
+                />
               </div>
             ))
           ) : (
@@ -299,7 +274,7 @@ export const TestPage: React.FC = () => {
             <li>Select a confirmed layout</li>
             <li>Fill in the test data (Name is required)</li>
             <li>Click "Generate & Download Certificate"</li>
-            <li>The PDF downloads as Name_Layout_LayoutName_Certificate.pdf (invalid characters removed).</li>
+            <li>The PDF downloads as ParticpantName_EventName_Certificate.pdf </li>
           </ul>
         </div>
       </div>
