@@ -53,18 +53,7 @@ app.use("/api/certificates", certificateRoutes);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: "Certificate Generator API",
-    version: "1.0.0",
-    endpoints: {
-      auth: "/auth",
-      upload: "/api/upload",
-      layouts: "/api/layouts",
-      certificates: "/api/certificates",
-      health: "/health",
-    },
-  });
+  res.json({ success: true });
 });
 
 // Health check
