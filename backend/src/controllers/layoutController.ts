@@ -10,6 +10,21 @@ import {
 import { Layout, TextField } from "../types";
 import { asyncHandler, sendSuccess, sendError } from "../middleware/errorHandler";
 
+// Helper function to clean layout data and remove extra properties
+const cleanLayout = (layout: Layout): Layout => {
+  return {
+    layoutId: layout.layoutId,
+    layoutName: layout.layoutName,
+    templateFile: layout.templateFile,
+    fonts: layout.fonts,
+    fields: layout.fields,
+    createdAt: layout.createdAt,
+    updatedAt: layout.updatedAt,
+    confirmed: layout.confirmed,
+    createdBy: layout.createdBy,
+  };
+};
+
 /**
  * Save layout configuration
  */
@@ -75,7 +90,8 @@ export const saveLayoutConfig = asyncHandler(
       return sendError(res, "Failed to save layout", 500);
     }
 
-    sendSuccess(res, layout, "Layout saved successfully", 201);
+    // Return clean response object with only necessary fields
+    sendSuccess(res, cleanLayout(layout), "Layout saved successfully", 201);
   }
 );
 
@@ -103,7 +119,7 @@ export const confirmLayout = asyncHandler(
       return sendError(res, "Failed to confirm layout", 500);
     }
 
-    sendSuccess(res, layout, "Layout confirmed successfully");
+    sendSuccess(res, cleanLayout(layout), "Layout confirmed successfully");
   }
 );
 
@@ -122,7 +138,7 @@ export const getLayout = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, "Layout not found", 404);
   }
 
-  sendSuccess(res, layout, "Layout retrieved successfully");
+  sendSuccess(res, cleanLayout(layout), "Layout retrieved successfully");
 });
 
 /**
@@ -131,10 +147,11 @@ export const getLayout = asyncHandler(async (req: Request, res: Response) => {
 export const getAllLayouts = asyncHandler(
   async (req: Request, res: Response) => {
     const layouts = listLayouts();
+    const cleanedLayouts = layouts.map(cleanLayout);
     sendSuccess(
       res,
-      layouts,
-      `Found ${layouts.length} layout(s)`,
+      cleanedLayouts,
+      `Found ${cleanedLayouts.length} layout(s)`,
       200
     );
   }
