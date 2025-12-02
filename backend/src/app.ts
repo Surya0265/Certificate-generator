@@ -17,9 +17,20 @@ const app = express();
 ensureDirectories();
 
 // Middleware
+const allowedOrigins = [
+  process.env.CORS_ORIGIN_1 || "http://localhost:3000",
+  process.env.CORS_ORIGIN_2 || "http://localhost:5173",
+];
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     exposedHeaders: ["Content-Disposition", "X-Certificate-Filename"],
   })
