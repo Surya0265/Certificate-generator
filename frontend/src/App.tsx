@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./pages/Login";
 import { LayoutEditor } from "./pages/LayoutEditor";
+import { TestPage } from "./pages/TestPage";
 import "./App.css";
 
 export const App: React.FC = () => {
@@ -25,6 +26,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <LayoutEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/test"
+            element={
+              <ProtectedRoute>
+                <TestPage />
               </ProtectedRoute>
             }
           />

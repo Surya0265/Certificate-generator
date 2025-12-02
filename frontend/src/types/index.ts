@@ -25,6 +25,7 @@ export interface Layout {
   createdAt: string;
   updatedAt: string;
   confirmed: boolean;
+  createdBy?: string;
 }
 
 export interface CanvasTextField extends TextField {

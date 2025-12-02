@@ -1,54 +1,343 @@
-# Certificate Generation Microservice
+# Certificate Generator - Microservice
 
-A production-ready microservice for managing certificate templates and generating certificates dynamically. Built with Node.js, Express, React, Fabric.js, and PDFKit.
+A complete certificate generation microservice with a professional UI for creating, editing, and generating certificates with customizable layouts.
 
-## 🎯 Features
+## 🚀 Features
 
-- **Phase 1: Template Setup**
-  - Upload certificate templates (PNG, JPG, PDF)
-  - Upload custom TTF fonts
-  - Drag-and-drop UI to place dynamic text fields
-  - Save layout configurations as JSON files
-  - Lock layouts for production use
+✅ **User Authentication** - Secure login system with predefined credentials  
+✅ **Layout Editor** - Drag-and-drop template editor with field positioning  
+✅ **Predefined Fields** - Name, Event, College, Class, Year (customizable per layout)  
+✅ **Font Management** - Upload custom fonts (TTF) and use them in layouts  
+✅ **Certificate Generation** - Generate PDFs with dynamic text overlay  
+✅ **Adaptive Font Sizing** - Intelligent font size adjustment for Name and College fields  
+✅ **Smart Naming** - Certificates named as: `{EventName}_{PersonName}.pdf`  
+✅ **Test Page** - Admin interface to test certificate generation  
+✅ **Responsive Design** - Works on desktop and mobile devices  
 
-- **Phase 2: Certificate Generation**
-  - Generate certificates on-demand via REST API
-  - Support for custom fonts and text styling
-  - Return certificates as PDF binary streams
-  - No database required - file-based JSON storage
+## 📋 Prerequisites
 
-## 📁 Project Structure
+- **Node.js** (v16+)
+- **npm** or **yarn**
+- **Postman** (optional, for API testing)
+
+## 🏗️ Project Structure
 
 ```
-Certificate-generator/
-├── backend/
+certificate-generator/
+├── backend/                 # Node.js + Express API
 │   ├── src/
-│   │   ├── types/
-│   │   │   └── index.ts              # TypeScript interfaces
-│   │   ├── utils/
-│   │   │   ├── fileHandler.ts        # JSON file operations
-│   │   │   └── pdfGenerator.ts       # PDFKit certificate generation
-│   │   ├── controllers/
-│   │   │   ├── uploadController.ts   # File upload handlers
-│   │   │   ├── layoutController.ts   # Layout management
-│   │   │   └── certificateController.ts  # Certificate generation
-│   │   ├── routes/
-│   │   │   ├── uploadRoutes.ts
-│   │   │   ├── layoutRoutes.ts
-│   │   │   └── certificateRoutes.ts
-│   │   ├── middleware/
-│   │   │   ├── upload.ts             # Multer configuration
-│   │   │   └── errorHandler.ts       # Global error handling
-│   │   ├── app.ts                    # Express app setup
-│   │   └── index.ts                  # Server entry point
+│   │   ├── app.ts          # Express app configuration
+│   │   ├── index.ts        # Server entry point
+│   │   ├── controllers/    # Route controllers
+│   │   ├── middleware/     # Custom middleware
+│   │   ├── routes/         # API routes
+│   │   ├── types/          # TypeScript types
+│   │   └── utils/          # Helper functions
+│   ├── data/
+│   │   ├── users.json      # User credentials
+│   │   ├── layouts/        # Saved layout configurations
+│   │   ├── certificates/   # Generated certificates
+│   │   └── uploads/        # Uploaded templates and fonts
 │   ├── package.json
-│   ├── tsconfig.json
-│   └── .env.example
-├── frontend/
-│   ├── public/
-│   │   └── index.html
+│   └── tsconfig.json
+│
+├── frontend/                # React + TypeScript UI
 │   ├── src/
-│   │   ├── types/
+│   │   ├── pages/          # Page components
+│   │   ├── components/     # Reusable components
+│   │   ├── context/        # React Context (Auth)
+│   │   ├── services/       # API client
+│   │   ├── types/          # TypeScript types
+│   │   ├── App.tsx         # Main app component
+│   │   └── index.tsx       # App entry point
+│   ├── public/
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── README.md
+```
+
+## 🔐 Default Credentials
+
+The application comes with three demo users:
+
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123 | Administrator |
+| teacher | teacher123 | Educator |
+| user | user123 | General User |
+
+**Note:** In production, replace `data/users.json` with a proper database and authentication system.
+
+## 🚀 Quick Start
+
+### 1. Clone and Install
+
+```bash
+# Clone the repository
+git clone https://github.com/Surya0265/Certificate-generator.git
+cd Certificate-generator
+
+# Install backend dependencies
+cd backend
+npm install
+
+# Install frontend dependencies
+cd ../frontend
+npm install
+```
+
+### 2. Start the Application
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+npm run dev
+# Runs on http://localhost:3001
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm start
+# Runs on http://localhost:3000
+```
+
+### 3. Access the Application
+
+Open your browser and navigate to:
+```
+http://localhost:3000
+```
+
+**Login** with any of the demo credentials above.
+
+## 📚 Workflow
+
+### Step 1: Create a Layout
+
+1. Click **"1. Upload Template"** - Upload a PDF, PNG, or JPG certificate template
+2. Click **"2. Upload Fonts"** - (Optional) Upload custom TTF font files
+3. Enter **"Event Name"** - This becomes the layout identifier
+4. Select **"Fields"** - Choose which fields to include (Name, Event, College, Class, Year)
+5. Drag fields on canvas to position them
+6. Adjust font size and color as needed
+7. Click **"Save Layout"** to save the configuration
+8. Click **"Confirm & Lock"** to finalize the layout
+
+### Step 2: Test Certificate Generation
+
+1. Click the **"Test"** button in the header
+2. Select a confirmed layout
+3. Fill in test data (Name is required)
+4. Click **"Generate & Download Certificate"**
+5. The PDF will download with filename: `{EventName}_{PersonName}.pdf`
+
+### Step 3: Generate Certificates via API
+
+Use the `/api/certificates/generate` endpoint with the layout ID and recipient data.
+
+## 🔌 API Endpoints
+
+### Authentication
+```
+POST /api/auth/login
+Body: { "username": "admin", "password": "admin123" }
+Response: { "token": "jwt_token" }
+```
+
+### Layout Management
+```
+GET    /api/layouts                    # List all layouts
+POST   /api/layouts                    # Create layout
+GET    /api/layouts/:layoutId          # Get specific layout
+PUT    /api/layouts/:layoutId          # Update layout
+POST   /api/layouts/:layoutId/confirm  # Confirm/lock layout
+DELETE /api/layouts/:layoutId          # Delete layout
+```
+
+### File Uploads
+```
+POST /api/uploads/template             # Upload template (PDF/PNG/JPG)
+POST /api/uploads/font                 # Upload font (TTF)
+```
+
+### Certificate Generation
+```
+POST /api/certificates/generate              # Generate & download PDF
+POST /api/certificates/generate-and-save     # Generate & save to disk
+GET  /api/certificates/download/:fileName    # Download saved certificate
+```
+
+## 📝 Certificate Generation Example
+
+### Request:
+```bash
+curl -X POST http://localhost:3001/api/certificates/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "layoutId": "Annual_Awards_2024",
+    "data": {
+      "Name": "John Smith",
+      "Event": "Annual Awards 2024",
+      "College": "Engineering Department",
+      "Class": "2024",
+      "Year": "2024"
+    }
+  }'
+```
+
+### Response:
+- **Status:** 200
+- **Content-Type:** application/pdf
+- **Content-Disposition:** attachment; filename="Annual_Awards_2024_John_Smith.pdf"
+- **Body:** Binary PDF data
+
+## 🎨 UI Features
+
+### Login Page
+- Blue gradient background
+- Professional card design
+- Demo credentials displayed for reference
+
+### Layout Editor
+- Real-time canvas preview with proper scale ratio
+- Drag-and-drop field positioning
+- Font size adjustment with smooth scaling
+- Color picker for text
+- Field toggle (enable/disable)
+- Custom font preview in editor
+
+### Test Page
+- Dropdown to select confirmed layouts
+- Form to fill in certificate data
+- One-click PDF generation and download
+- Real-time validation and feedback
+
+## 🔧 Configuration
+
+### Backend Configuration
+
+**Environment Variables** (if needed):
+```env
+PORT=3001
+NODE_ENV=development
+```
+
+### Frontend Configuration
+
+**API Base URL:** `http://localhost:3001`
+
+To change, update:
+- `frontend/src/services/api.ts`
+
+## 📦 Technology Stack
+
+### Backend
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Language:** TypeScript
+- **PDF Generation:** PDFKit, pdf-lib, fontkit
+- **File Upload:** Multer
+- **Authentication:** JWT (custom)
+
+### Frontend
+- **Framework:** React 18
+- **Language:** TypeScript
+- **Canvas:** Fabric.js v5.3.0
+- **PDF Viewer:** PDF.js v3.11.174
+- **Routing:** React Router v6
+- **Notifications:** React Toastify
+- **Styling:** CSS3
+
+## 🚀 Deployment
+
+### Backend Deployment (Example: Heroku)
+
+```bash
+cd backend
+heroku create your-app-name
+git push heroku main
+```
+
+### Frontend Deployment (Example: Vercel)
+
+```bash
+cd frontend
+npm run build
+vercel --prod
+```
+
+## 🐛 Troubleshooting
+
+### Issue: "Layout not found"
+- Ensure the layout is created and confirmed before generating certificates
+- Check the layoutId matches exactly
+
+### Issue: "Font not rendering"
+- Verify the font file is uploaded in TTF format
+- Check font name in the layout matches the uploaded font
+
+### Issue: "Preview text looks small"
+- This is normal - the preview shows at editor resolution
+- The actual certificate will render at full PDF resolution
+- The scale ratio is automatically calculated to match the final output
+
+### Issue: "Certificate download fails"
+- Ensure Name field is provided (it's required)
+- Check that all field data is valid strings
+- Verify the backend is running on port 3001
+
+## 📄 File Naming Convention
+
+### Layouts
+- **Format:** `{EventName}.json`
+- **Example:** `Annual_Awards_2024.json`
+- **Location:** `backend/data/layouts/`
+
+### Certificates
+- **Format:** `{EventName}_{PersonName}.pdf`
+- **Example:** `Annual_Awards_2024_John_Smith.pdf`
+- **Location:** `backend/data/certificates/` (if saved)
+
+## 🔄 Font Sizing Logic
+
+### Name Field
+- If text length > 35 characters: reduce by 1.2px per extra character
+- Minimum size: 18px
+
+### College Field
+- **40-49 chars:** Reduce by 0.8px per character, min 18px
+- **49-60 chars:** Reduce by 0.8px per character, min 14px
+- **60-70 chars:** Reduce by 1.2px per character, min 11px
+- **70+ chars:** Reduce by 0.8px per character, min 9px
+
+### Other Fields
+- Use the size set in the layout editor
+
+## 📧 Support
+
+For issues, feature requests, or questions:
+- Create an issue on GitHub
+- Contact: dev@certificate-generator.com
+
+## 📄 License
+
+This project is licensed under the MIT License - see LICENSE file for details.
+
+## 🙌 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+**Built with ❤️ by the Certificate Generator Team**
 │   │   │   └── index.ts
 │   │   ├── services/
 │   │   │   └── api.ts                # API client with Axios

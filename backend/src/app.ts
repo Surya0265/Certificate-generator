@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import { ensureDirectories } from "./utils/fileHandler";
 import { errorHandler } from "./middleware/errorHandler";
+import { authMiddleware } from "./middleware/auth";
 
 // Routes
 import authRoutes from "./routes/authRoutes";
@@ -24,6 +25,7 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use(authMiddleware);
 
 // Serve uploaded files (templates, fonts)
 app.use(

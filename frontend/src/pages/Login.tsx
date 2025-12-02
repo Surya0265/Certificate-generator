@@ -71,9 +71,7 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
-        <p className="login-footer">
-          Demo credentials: admin/admin123, teacher/teacher123, user/user123
-        </p>
+        
       </div>
     </div>
   );

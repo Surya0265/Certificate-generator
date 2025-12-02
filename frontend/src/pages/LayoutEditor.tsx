@@ -22,7 +22,7 @@ const PREDEFINED_FIELDS = ["Name", "Event", "College", "Class", "Year"];
 export const LayoutEditor: React.FC = () => {
   const { layoutId } = useParams<{ layoutId?: string }>();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [layout, setLayout] = useState<Layout | null>(null);
   const [loading, setLoading] = useState(false);
   const [templateImage, setTemplateImage] = useState<string>("");
@@ -183,6 +183,27 @@ export const LayoutEditor: React.FC = () => {
     try {
       setLoading(true);
       const templateFileName = templateImage.split("/").pop() || "template.png";
+      const currentUser =
+        user?.username ||
+        (() => {
+          try {
+            const stored = localStorage.getItem("user");
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              return parsed.username as string | undefined;
+            }
+          } catch (error) {
+            console.warn("Failed to parse stored user", error);
+          }
+          return undefined;
+        })();
+
+      if (!currentUser) {
+        toast.error("User session expired. Please log in again.");
+        setLoading(false);
+        navigate("/login");
+        return;
+      }
 
       const layoutData = {
         layoutId: layout?.layoutId,
@@ -198,6 +219,7 @@ export const LayoutEditor: React.FC = () => {
           color: f.color,
           alignment: f.alignment,
         })),
+        createdBy: currentUser,
       };
 
       if (layout && layout.layoutId) {
@@ -250,41 +272,51 @@ export const LayoutEditor: React.FC = () => {
   }
 
   const isConfirmed = layout?.confirmed || false;
+  const lastUpdatedLabel = layout?.updatedAt
+    ? new Date(layout.updatedAt).toLocaleString()
+    : "Just now";
 
   return (
     <div className="layout-editor-page">
       <div className="editor-container">
         <div className="sidebar">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-            <h1>Certificate Generator</h1>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: "6px 12px",
-                background: "#dc2626",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: "600",
-              }}
-            >
-              Logout
-            </button>
+          <div className="sidebar-header">
+            <div className="sidebar-title">
+              <h1>Certificate Studio</h1>
+              <p>Design, fine-tune, and preview your printable layouts.</p>
+            </div>
+            <div className="header-actions">
+              <button
+                onClick={() => navigate("/test")}
+                className="action-btn action-btn--ghost"
+              >
+                Preview
+              </button>
+              <button
+                onClick={handleLogout}
+                className="action-btn action-btn--danger"
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
           {layout && (
             <div className="layout-info">
-              <p>
-                <strong>Event:</strong> {layout.layoutName || layout.layoutId}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                <span className={isConfirmed ? "status-confirmed" : "status-draft"}>
-                  {isConfirmed ? "✓ Confirmed" : "Draft"}
+              <div className="layout-pill-group">
+                <span className="layout-pill">
+                  {layout.layoutName || layout.layoutId}
                 </span>
-              </p>
+                <span
+                  className={`layout-status layout-status--${isConfirmed ? "confirmed" : "draft"}`}
+                >
+                  {isConfirmed ? "Confirmed" : "Draft"}
+                </span>
+              </div>
+              {layout.createdBy && (
+                <p className="layout-meta">Created by {layout.createdBy}</p>
+              )}
+              <p className="layout-meta">Last updated {lastUpdatedLabel}</p>
             </div>
           )}
 
@@ -337,31 +369,20 @@ export const LayoutEditor: React.FC = () => {
 
           <div className="section">
             <h3>4. Select Fields</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div className="field-list">
               {PREDEFINED_FIELDS.map((fieldName) => (
                 <label
                   key={fieldName}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "10px 12px",
-                    background: "rgba(248, 250, 252, 0.7)",
-                    borderRadius: "8px",
-                    cursor: isConfirmed ? "not-allowed" : "pointer",
-                    opacity: isConfirmed ? 0.6 : 1,
-                  }}
+                  className={`field-toggle ${isConfirmed ? "field-toggle--disabled" : ""}`}
                 >
                   <input
                     type="checkbox"
                     checked={selectedFields.includes(fieldName)}
                     onChange={() => toggleField(fieldName)}
                     disabled={isConfirmed}
-                    style={{ cursor: "pointer", width: "18px", height: "18px" }}
+                    className="field-toggle__checkbox"
                   />
-                  <span style={{ fontSize: "14px", fontWeight: "500", color: "#374151" }}>
-                    {fieldName}
-                  </span>
+                  <span className="field-toggle__label">{fieldName}</span>
                 </label>
               ))}
             </div>

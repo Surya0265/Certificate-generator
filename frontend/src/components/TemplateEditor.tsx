@@ -458,40 +458,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     setSelectedFontSize(bounded);
   };
 
-  const addTextField = (name: string) => {
-    const newField: CanvasTextField = {
-      id: `field_${Date.now()}`,
-      name,
-      x: 100,
-      y: 100,
-      fontSize: 24,
-      fontFamily: "Arial",
-      color: "#000000",
-      preview: name,
-    };
-
-    if (fabricCanvasRef.current) {
-      console.log("➕ Creating new field:", name);
-      addTextboxToCanvas(fabricCanvasRef.current, newField);
-      onFieldsChange([...fields, newField]);
-    }
-  };
-
   return (
     <div className="template-editor">
       <div className="editor-header">
         <h2>Template Layout Editor</h2>
-        {editable && (
-          <div className="quick-add">
-            <button onClick={() => addTextField("Name")}>
-              Add Name Field
-            </button>
-            <button onClick={() => addTextField("EventName")}>
-              Add Event Field
-            </button>
-            <button onClick={() => addTextField("Date")}>Add Date Field</button>
-          </div>
-        )}
       </div>
       <div className="canvas-container" ref={wrapperRef}>
         <div
@@ -517,26 +487,6 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
           />
         </div>
       </div>
-      {editable && selectedField && selectedFontSize !== null && (
-        <div className="field-properties">
-          <p>Selected: {fields.find((f) => f.id === selectedField)?.name}</p>
-          <small>Drag to move. Adjust font size as needed.</small>
-          <div className="property-control">
-            <label htmlFor="font-size-input">Font size</label>
-            <input
-              id="font-size-input"
-              type="number"
-              min={8}
-              max={200}
-              value={selectedFontSize}
-              onChange={(e) => {
-                const nextValue = Number(e.target.value);
-                handleFontSizeChange(Number.isNaN(nextValue) ? 8 : nextValue);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

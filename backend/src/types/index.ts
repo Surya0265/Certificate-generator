@@ -24,6 +24,7 @@ export interface Layout {
   createdAt: string;
   updatedAt: string;
   confirmed: boolean;
+  createdBy?: string; // Username who created this layout
 }
 
 export interface CertificateRequest {

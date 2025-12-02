@@ -4,7 +4,15 @@ import { generateCertificatePDF } from "../utils/pdfGenerator";
 import { asyncHandler, sendError } from "../middleware/errorHandler";
 import fs from "fs";
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
+
+const sanitizeSegment = (value: string): string => {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9-_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60) || "Value";
+};
 
 /**
  * Generate certificate PDF based on layout and data
@@ -39,10 +47,10 @@ export const generateCertificate = asyncHandler(
       // Generate PDF
       const pdfBuffer = await generateCertificatePDF(layout, data);
 
-      // Use layoutName + Name from request in certificate filename
-      const eventName = layout.layoutName || layout.layoutId;
-      const personName = data.Name || "Certificate";
-      const certificateFileName = `${eventName}_${personName}.pdf`;
+      // Use Name + Layout name for filename
+      const personNameRaw = data.Name || "Certificate";
+      const layoutNameRaw = layout.layoutName || layout.layoutId || "Layout";
+      const certificateFileName = `${sanitizeSegment(personNameRaw)}_${sanitizeSegment(layoutNameRaw)}.pdf`;
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
@@ -95,9 +103,9 @@ export const generateAndSaveCertificate = asyncHandler(
     try {
       // Generate PDF
       const pdfBuffer = await generateCertificatePDF(layout, data);
-      const eventName = layout.layoutName || layout.layoutId;
-      const personName = data.Name || "Certificate";
-      const certificateFileName = `${eventName}_${personName}.pdf`;
+      const personNameRaw = data.Name || "Certificate";
+      const layoutNameRaw = layout.layoutName || layout.layoutId || "Layout";
+      const certificateFileName = `${sanitizeSegment(personNameRaw)}_${sanitizeSegment(layoutNameRaw)}.pdf`;
       const { CERTIFICATES_DIR } = getDirectories();
 
       // Ensure certificates directory exists

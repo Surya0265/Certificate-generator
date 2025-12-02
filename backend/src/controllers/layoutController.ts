@@ -21,12 +21,14 @@ export const saveLayoutConfig = asyncHandler(
       templateFile,
       fonts,
       fields,
+      createdBy,
     }: {
       layoutId?: string;
       layoutName?: string;
       templateFile: string;
       fonts: { name: string; file: string }[];
       fields: TextField[];
+      createdBy?: string;
     } = req.body;
 
     if (!templateFile || !fields || fields.length === 0) {
@@ -64,6 +66,7 @@ export const saveLayoutConfig = asyncHandler(
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       confirmed: false,
+      createdBy: createdBy || req.user?.username,
     };
 
     const saved = saveLayout(layout);
@@ -175,7 +178,7 @@ export const removeLayout = asyncHandler(
 export const updateLayout = asyncHandler(
   async (req: Request, res: Response) => {
     const { layoutId } = req.params;
-    const { templateFile, fonts, fields } = req.body;
+    const { templateFile, fonts, fields, createdBy } = req.body;
 
     if (!layoutId) {
       return sendError(res, "Layout ID is required", 400);
@@ -207,6 +210,12 @@ export const updateLayout = asyncHandler(
         }
       }
       layout.fields = fields;
+    }
+
+    if (createdBy) {
+      layout.createdBy = createdBy;
+    } else if (!layout.createdBy && req.user?.username) {
+      layout.createdBy = req.user.username;
     }
 
     layout.updatedAt = new Date().toISOString();
