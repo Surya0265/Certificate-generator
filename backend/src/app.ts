@@ -58,11 +58,7 @@ app.get("/", (req: Request, res: Response) => {
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
-  res.json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-  });
+  res.json({ status: "OK" });
 });
 
 // 404 handler
