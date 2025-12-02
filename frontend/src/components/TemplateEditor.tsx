@@ -240,7 +240,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   // Update canvas size when it changes
   useEffect(() => {
     if (!fabricCanvasRef.current) return;
-    console.log("📐 Resizing canvas to", canvasSize.width, "x", canvasSize.height);
+    console.log("Resizing canvas to", canvasSize.width, "x", canvasSize.height);
     fabricCanvasRef.current.setWidth(canvasSize.width);
     fabricCanvasRef.current.setHeight(canvasSize.height);
     fabricCanvasRef.current.renderAll();
@@ -326,17 +326,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   }, [fields, selectedField]);
 
   const loadImageAsBackground = (imageUrl: string) => {
-    console.log("🖼️ Loading image:", imageUrl);
+    console.log("Loading image:", imageUrl);
 
     const img = new Image();
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      console.log("✅ Image loaded, size:", img.width, "x", img.height);
+      console.log("Image loaded, size:", img.width, "x", img.height);
 
       const bgCanvas = backgroundCanvasRef.current;
       if (!bgCanvas) {
-        console.error("❌ Background canvas not found");
+        console.error("Background canvas not found");
         return;
       }
 
@@ -350,14 +350,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       const ctx = bgCanvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(img, 0, 0, maxWidth, scaledHeight);
-        console.log("✅ Image drawn on background canvas");
+        console.log("Image drawn on background canvas");
       }
 
       setCanvasSize({ width: maxWidth, height: Math.round(scaledHeight) });
     };
 
     img.onerror = (e) => {
-      console.error("❌ Image load error:", e);
+      console.error("Image load error:", e);
     };
 
     img.src = imageUrl;
@@ -365,13 +365,13 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   const loadPdfAsBackground = async (pdfUrl: string) => {
     try {
-      console.log("📄 Loading PDF:", pdfUrl);
+      console.log("Loading PDF:", pdfUrl);
 
       const response = await fetch(pdfUrl);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const pdfData = await response.arrayBuffer();
-      console.log("✅ PDF fetched:", pdfData.byteLength, "bytes");
+      console.log("PDF fetched:", pdfData.byteLength, "bytes");
 
       const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
       const page = await pdf.getPage(1);
@@ -385,11 +385,11 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       const baseWidth = 800;
       const calculatedScaleRatio = pageWidth / baseWidth;
       setScaleRatio(calculatedScaleRatio);
-      console.log(`📐 PDF dimensions: ${pageWidth}x${pageHeight}, scale ratio: ${calculatedScaleRatio}`);
+      console.log(`PDF dimensions: ${pageWidth}x${pageHeight}, scale ratio: ${calculatedScaleRatio}`);
 
       const scale = 2;
       const scaledViewport = page.getViewport({ scale });
-      console.log("📐 Viewport:", scaledViewport.width, "x", scaledViewport.height);
+      console.log("Viewport:", scaledViewport.width, "x", scaledViewport.height);
 
       // Create PDF render canvas
       const pdfCanvas = document.createElement("canvas");
@@ -402,12 +402,12 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
         viewport: scaledViewport,
       }).promise;
 
-      console.log("✅ PDF rendered to temp canvas");
+      console.log("PDF rendered to temp canvas");
 
       // Draw to background canvas
       const bgCanvas = backgroundCanvasRef.current;
       if (!bgCanvas) {
-        console.error("❌ Background canvas not found");
+        console.error("Background canvas not found");
         return;
       }
 
@@ -421,13 +421,13 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       const bgCtx = bgCanvas.getContext("2d");
       if (bgCtx) {
         bgCtx.drawImage(pdfCanvas, 0, 0, maxWidth, scaledHeight);
-        console.log("✅ PDF drawn on background canvas");
+        console.log("PDF drawn on background canvas");
       }
 
       // Update Fabric canvas size to match
       setCanvasSize({ width: maxWidth, height: Math.round(scaledHeight) });
     } catch (error) {
-      console.error("❌ Error loading PDF:", error);
+      console.error("Error loading PDF:", error);
     }
   };
 

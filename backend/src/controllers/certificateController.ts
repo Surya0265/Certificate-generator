@@ -49,8 +49,13 @@ export const generateCertificate = asyncHandler(
 
       // Use Name + Layout name for filename
       const personNameRaw = data.Name || "Certificate";
-      const layoutNameRaw = layout.layoutName || layout.layoutId || "Layout";
-      const certificateFileName = `${sanitizeSegment(personNameRaw)}_${sanitizeSegment(layoutNameRaw)}.pdf`;
+      const layoutIdRaw = (layout.layoutId || "layout").toLowerCase();
+      const certificateFileName = `${sanitizeSegment(personNameRaw)}_${sanitizeSegment(layoutIdRaw)}_Certificate.pdf`;
+      res.setHeader(
+        "Access-Control-Expose-Headers",
+        "Content-Disposition, X-Certificate-Filename"
+      );
+      res.setHeader("X-Certificate-Filename", certificateFileName);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
@@ -104,8 +109,13 @@ export const generateAndSaveCertificate = asyncHandler(
       // Generate PDF
       const pdfBuffer = await generateCertificatePDF(layout, data);
       const personNameRaw = data.Name || "Certificate";
-      const layoutNameRaw = layout.layoutName || layout.layoutId || "Layout";
-      const certificateFileName = `${sanitizeSegment(personNameRaw)}_${sanitizeSegment(layoutNameRaw)}.pdf`;
+      const layoutIdRaw = (layout.layoutId || "layout").toLowerCase();
+      const certificateFileName = `${sanitizeSegment(personNameRaw)}_Layout_${sanitizeSegment(layoutIdRaw)}_Certificate.pdf`;
+      res.setHeader(
+        "Access-Control-Expose-Headers",
+        "Content-Disposition, X-Certificate-Filename"
+      );
+      res.setHeader("X-Certificate-Filename", certificateFileName);
       const { CERTIFICATES_DIR } = getDirectories();
 
       // Ensure certificates directory exists

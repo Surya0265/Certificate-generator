@@ -34,8 +34,11 @@ export const Login: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>Certificate Generator</h1>
-        <p className="login-subtitle">Sign in to your account</p>
+        <div className="login-header">
+          <img src="/logo.png" alt="Certificate Studio" className="login-logo" />
+          <h1>Certificate Studio</h1>
+          <p className="login-subtitle">Professional Certificate Template Editor</p>
+        </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">

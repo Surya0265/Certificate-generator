@@ -30,6 +30,8 @@ export const LayoutEditor: React.FC = () => {
   const [fonts, setFonts] = useState<Font[]>([]);
   const [eventName, setEventName] = useState("");
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingLayoutData, setPendingLayoutData] = useState<any>(null);
 
   // Load existing layout if layoutId provided
   useEffect(() => {
@@ -61,9 +63,9 @@ export const LayoutEditor: React.FC = () => {
         
         fontFace.load().then((loadedFont) => {
           document.fonts.add(loadedFont);
-          console.log(`✅ Font loaded: ${font.name}`);
+          console.log(`Font loaded: ${font.name}`);
         }).catch((error) => {
-          console.warn(`⚠️ Font load warning: ${font.name}`, error);
+          console.warn(`Font load warning: ${font.name}`, error);
         });
       });
       
@@ -129,9 +131,9 @@ export const LayoutEditor: React.FC = () => {
       
       fontFace.load().then((loadedFont) => {
         document.fonts.add(loadedFont);
-        console.log(`✅ Font loaded: ${fontName}`);
+        console.log(`Font loaded: ${fontName}`);
       }).catch((error) => {
-        console.warn(`⚠️ Font load warning: ${fontName}`, error);
+        console.warn(`Font load warning: ${fontName}`, error);
       });
       
       setFonts([...fonts, newFont]);
@@ -205,6 +207,63 @@ export const LayoutEditor: React.FC = () => {
         return;
       }
 
+      // Check if layout with same name exists
+      if (!layout?.layoutId) {
+        try {
+          const response = await fetch("http://localhost:3001/api/layouts", {
+            headers: {
+              "Authorization": `Bearer ${currentUser}`,
+            },
+          });
+          const data = await response.json();
+          const existingLayout = (data.data || []).find(
+            (l: any) => l.layoutName === eventName && l.createdBy === currentUser
+          );
+
+          if (existingLayout) {
+            // Store the pending data and show custom dialog
+            setPendingLayoutData({
+              layoutData: {
+                layoutId: layout?.layoutId,
+                layoutName: eventName,
+                templateFile: templateFileName,
+                fonts,
+                fields: fields.map((f) => ({
+                  name: f.name,
+                  x: f.x,
+                  y: f.y,
+                  fontSize: f.fontSize,
+                  fontFamily: f.fontFamily,
+                  color: f.color,
+                  alignment: f.alignment,
+                })),
+                createdBy: currentUser,
+              },
+              existingLayoutId: existingLayout.layoutId,
+            });
+            setShowConfirmDialog(true);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.warn("Failed to check existing layouts", error);
+        }
+      }
+
+      // Proceed with save
+      await performSaveLayout(currentUser);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to save layout");
+      console.error(error);
+      setLoading(false);
+    }
+  };
+
+  const performSaveLayout = async (currentUser: string) => {
+    try {
+      setLoading(true);
+      const templateFileName = templateImage.split("/").pop() || "template.png";
+
       const layoutData = {
         layoutId: layout?.layoutId,
         layoutName: eventName,
@@ -230,6 +289,61 @@ export const LayoutEditor: React.FC = () => {
         setLayout(savedLayout);
         toast.success(`Layout saved: ${eventName}`);
       }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to save layout");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmOverwrite = async (confirmed: boolean) => {
+    setShowConfirmDialog(false);
+
+    if (!confirmed) {
+      setPendingLayoutData(null);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const currentUser =
+        user?.username ||
+        (() => {
+          try {
+            const stored = localStorage.getItem("user");
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              return parsed.username as string | undefined;
+            }
+          } catch (error) {
+            console.warn("Failed to parse stored user", error);
+          }
+          return undefined;
+        })();
+
+      if (!currentUser) {
+        toast.error("User session expired");
+        setLoading(false);
+        return;
+      }
+
+      // Delete the existing layout
+      await fetch(
+        `http://localhost:3001/api/layouts/${pendingLayoutData.existingLayoutId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${currentUser}`,
+          },
+        }
+      );
+
+      // Save new layout
+      const savedLayout = await saveLayout(pendingLayoutData.layoutData);
+      setLayout(savedLayout);
+      toast.success(`Layout saved: ${eventName}`);
+      setPendingLayoutData(null);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to save layout");
       console.error(error);
@@ -301,24 +415,7 @@ export const LayoutEditor: React.FC = () => {
             </div>
           </div>
 
-          {layout && (
-            <div className="layout-info">
-              <div className="layout-pill-group">
-                <span className="layout-pill">
-                  {layout.layoutName || layout.layoutId}
-                </span>
-                <span
-                  className={`layout-status layout-status--${isConfirmed ? "confirmed" : "draft"}`}
-                >
-                  {isConfirmed ? "Confirmed" : "Draft"}
-                </span>
-              </div>
-              {layout.createdBy && (
-                <p className="layout-meta">Created by {layout.createdBy}</p>
-              )}
-              <p className="layout-meta">Last updated {lastUpdatedLabel}</p>
-            </div>
-          )}
+          {/* Layout info removed to prevent null reference errors */}
 
           <div className="section">
             <h3>1. Upload Template</h3>
@@ -330,7 +427,7 @@ export const LayoutEditor: React.FC = () => {
               className="file-input"
             />
             {templateImage && (
-              <p className="success-text">✓ Template loaded</p>
+              <p className="success-text">Template loaded</p>
             )}
           </div>
 
@@ -393,35 +490,58 @@ export const LayoutEditor: React.FC = () => {
               <h3>Selected Fields</h3>
               <div className="fields-list">
                 {fields.map((field) => (
-                  <div key={field.id} className="field-item">
-                    <div className="field-name">{field.name}</div>
-                    <div className="field-coords">
-                      x: {field.x}, y: {field.y}
+                  <div key={field.id} className="field-item" style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="field-name">{field.name}</div>
+                      <div className="field-coords">
+                        x: {field.x}, y: {field.y}
+                      </div>
+                      <div className="field-props">
+                        <span>Font: {field.fontFamily}</span>
+                        {!isConfirmed ? (
+                          <label className="field-size-input">
+                            Size
+                            <input
+                              type="number"
+                              min={8}
+                              max={200}
+                              value={field.fontSize}
+                              onChange={(e) => {
+                                const updatedFields = fields.map((f) =>
+                                  f.id === field.id
+                                    ? { ...f, fontSize: Number(e.target.value) }
+                                    : f
+                                );
+                                setFields(updatedFields);
+                              }}
+                            />
+                          </label>
+                        ) : (
+                          <span>{field.fontSize}px</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="field-props">
-                      <span>Font: {field.fontFamily}</span>
-                      {!isConfirmed ? (
-                        <label className="field-size-input">
-                          Size
-                          <input
-                            type="number"
-                            min={8}
-                            max={200}
-                            value={field.fontSize}
-                            onChange={(e) => {
-                              const updatedFields = fields.map((f) =>
-                                f.id === field.id
-                                  ? { ...f, fontSize: Number(e.target.value) }
-                                  : f
-                              );
-                              setFields(updatedFields);
-                            }}
-                          />
-                        </label>
-                      ) : (
-                        <span>{field.fontSize}px</span>
-                      )}
-                    </div>
+                    {!isConfirmed && (
+                      <button
+                        onClick={() => handleRemoveField(field.id)}
+                        style={{
+                          backgroundColor: "#dc2626",
+                          color: "white",
+                          padding: "6px 10px",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          transition: "background-color 0.3s ease",
+                          minWidth: "32px",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b91c1c")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
+                        title="Remove this field"
+                      >
+                        X
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -446,7 +566,7 @@ export const LayoutEditor: React.FC = () => {
                   : "linear-gradient(135deg, #10b981, #059669)",
               }}
             >
-              {isConfirmed ? "✓ Confirmed" : "Confirm & Lock"}
+              {isConfirmed ? "Confirmed" : "Confirm & Lock"}
             </button>
           </div>
 
@@ -467,12 +587,91 @@ export const LayoutEditor: React.FC = () => {
             />
           ) : (
             <div className="placeholder">
-              Upload a certificate template (PDF, PNG, JPG) to get started
+              Upload a certificate template (PDF) to get started
             </div>
           )}
         </div>
       </div>
       <ToastContainer position="bottom-right" />
+
+      {showConfirmDialog && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "8px",
+              padding: "30px",
+              maxWidth: "400px",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+              textAlign: "center",
+            }}
+          >
+            <h2 style={{ marginTop: 0, color: "#1f2937" }}>Layout Already Exists</h2>
+            <p style={{ color: "#6b7280", fontSize: "16px", marginBottom: "30px" }}>
+              A layout named "<strong>{eventName}</strong>" already exists. Do you want to delete it and create a new one?
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "center",
+              }}
+            >
+              <button
+                onClick={() => handleConfirmOverwrite(false)}
+                disabled={loading}
+                style={{
+                  padding: "10px 20px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  backgroundColor: "#f3f4f6",
+                  color: "#1f2937",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  transition: "background-color 0.3s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#e5e7eb")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f3f4f6")}
+              >
+                No
+              </button>
+              <button
+                onClick={() => handleConfirmOverwrite(true)}
+                disabled={loading}
+                style={{
+                  padding: "10px 20px",
+                  border: "none",
+                  borderRadius: "6px",
+                  backgroundColor: "#dc2626",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  transition: "background-color 0.3s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b91c1c")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
+              >
+                Yes, Delete & Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

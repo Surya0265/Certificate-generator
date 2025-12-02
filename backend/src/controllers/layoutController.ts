@@ -54,12 +54,13 @@ export const saveLayoutConfig = asyncHandler(
     // Convert layoutName to safe filename format and use as ID
     const safeName = layoutName
       .replace(/[^a-zA-Z0-9-_]/g, "_")
-      .substring(0, 50);
+      .substring(0, 50)
+      .toLowerCase();
     const newLayoutId = safeName;
 
     const layout: Layout = {
       layoutId: newLayoutId,
-      layoutName: layoutName || newLayoutId,
+      layoutName: layoutName.toLowerCase() || newLayoutId,
       templateFile,
       fonts: fonts || [],
       fields,

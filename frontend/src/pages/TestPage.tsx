@@ -109,10 +109,15 @@ export const TestPage: React.FC = () => {
 
       // Get filename from content-disposition header
       const contentDisposition = response.headers.get("content-disposition");
-      let fileName = "certificate.pdf";
+      const headerFileName =
+        response.headers.get("X-Certificate-Filename") ||
+        response.headers.get("x-certificate-filename");
+      let fileName = headerFileName || "certificate.pdf";
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?([^"]+)"?/);
-        if (match) fileName = match[1];
+        if (match) {
+          fileName = match[1];
+        }
       }
 
       // Download PDF
@@ -135,6 +140,12 @@ export const TestPage: React.FC = () => {
     }
   };
 
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter") {
+      handleGenerateCertificate();
+    }
+  };
+
   if (layouts_loading) {
     return <div className="loading">Loading layouts...</div>;
   }
@@ -147,7 +158,19 @@ export const TestPage: React.FC = () => {
             <h1>Certificate Test</h1>
             <button
               onClick={() => navigate("/")}
-              className="test-nav-button"
+              className="test-nav-button improved-back-button"
+              style={{
+                backgroundColor: "#4CAF50",
+                color: "white",
+                padding: "10px 20px",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+                fontSize: "16px",
+                transition: "background-color 0.3s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#45a049")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4CAF50")}
             >
               ← Back to Studio
             </button>
@@ -162,13 +185,28 @@ export const TestPage: React.FC = () => {
   }
 
   return (
-    <div className="test-page">
+    <div className="test-page" onKeyPress={handleKeyPress}>
       <div className="test-container">
         <div className="test-header">
-          <h1>Certificate Test</h1>
+          <div className="test-header-content">
+            <img src="/logo.png" alt="Certificate Studio" className="test-logo" />
+            <h1>Certificate Test</h1>
+          </div>
           <button
             onClick={() => navigate("/")}
-            className="test-nav-button"
+            className="test-nav-button improved-back-button"
+            style={{
+              backgroundColor: "#4CAF50",
+              color: "white",
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              fontSize: "16px",
+              transition: "background-color 0.3s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#45a049")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4CAF50")}
           >
             ← Back to Studio
           </button>
@@ -195,23 +233,48 @@ export const TestPage: React.FC = () => {
           <h3>Test Data</h3>
           {selectedLayoutData && selectedLayoutData.fields.length > 0 ? (
             selectedLayoutData.fields.map((field: any) => (
-              <div key={field.name} className="form-group">
-                <label>
-                  {field.name}
-                  {field.name === "Name" && (
-                    <span style={{ color: "#dc2626" }}>*</span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  placeholder={`Enter ${field.name.toLowerCase()}`}
-                  value={testData[field.name] || ""}
-                  onChange={(e) =>
-                    handleTestDataChange(field.name, e.target.value)
-                  }
+              <div key={field.name} className="form-group" style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+                <div style={{ flex: 1 }}>
+                  <label>
+                    {field.name}
+                    {field.name === "Name" && (
+                      <span style={{ color: "#dc2626" }}>*</span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={`Enter ${field.name.toLowerCase()}`}
+                    value={testData[field.name] || ""}
+                    onChange={(e) =>
+                      handleTestDataChange(field.name, e.target.value)
+                    }
+                    disabled={loading}
+                    className="test-input"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    const newTestData = { ...testData };
+                    delete newTestData[field.name];
+                    setTestData(newTestData);
+                  }}
                   disabled={loading}
-                  className="test-input"
-                />
+                  style={{
+                    backgroundColor: "#dc2626",
+                    color: "white",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    transition: "background-color 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#b91c1c")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#dc2626")}
+                  title="Clear this field"
+                >
+                  ✕
+                </button>
               </div>
             ))
           ) : (
@@ -230,12 +293,12 @@ export const TestPage: React.FC = () => {
         </div>
 
         <div className="test-info">
-          <h4>ℹ️ How to Test</h4>
+          <h4>How to Test</h4>
           <ul>
             <li>Select a confirmed layout</li>
             <li>Fill in the test data (Name is required)</li>
             <li>Click "Generate & Download Certificate"</li>
-            <li>The PDF downloads as Name_Layout.pdf (invalid characters removed).</li>
+            <li>The PDF downloads as Name_Layout_LayoutName_Certificate.pdf (invalid characters removed).</li>
           </ul>
         </div>
       </div>
