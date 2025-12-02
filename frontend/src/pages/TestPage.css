@@ -116,7 +116,7 @@
   opacity: 0.6;
 }
 
-.form-group {
+.test-section .form-group {
   margin-bottom: 15px;
   display: flex;
   flex-direction: column;
