@@ -16,7 +16,7 @@
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["react/jsx-runtime"]
+    "types": ["vite/client", "react/jsx-runtime"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

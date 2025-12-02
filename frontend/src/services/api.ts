@@ -1,11 +1,20 @@
 import axios from "axios";
 import { Layout, TextField } from "../types";
 
-// Use import.meta.env for Vite or window.__REACT_APP__ for CRA
-const API_BASE_URL = 
-  typeof window !== 'undefined' && (window as any).__REACT_APP_API_URL 
-    ? (window as any).__REACT_APP_API_URL
-    : "http://localhost:3001/api";
+const resolveApiBaseUrl = () => {
+  const envUrl = typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_URL : undefined;
+  if (envUrl && envUrl.trim().length > 0) {
+    return envUrl;
+  }
+
+  if (typeof window !== "undefined" && (window as any).__REACT_APP_API_URL) {
+    return (window as any).__REACT_APP_API_URL as string;
+  }
+
+  return "http://localhost:3001/api";
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
