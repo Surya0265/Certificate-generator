@@ -1,6 +1,17 @@
 import { Request, Response } from "express";
 import { asyncHandler, sendSuccess, sendError } from "../middleware/errorHandler";
 
+// Helper function to clean file upload response
+const cleanFileInfo = (file: any) => {
+  return {
+    fileName: file.filename,
+    originalName: file.originalname,
+    size: file.size,
+    mimetype: file.mimetype,
+    uploadedAt: new Date().toISOString(),
+  };
+};
+
 /**
  * Handle template upload
  */
@@ -10,15 +21,7 @@ export const uploadTemplateFile = asyncHandler(
       return sendError(res, "No file uploaded", 400);
     }
 
-    const file = req.file;
-    const fileInfo = {
-      fileName: file.filename,
-      originalName: file.originalname,
-      size: file.size,
-      mimetype: file.mimetype,
-      uploadedAt: new Date().toISOString(),
-    };
-
+    const fileInfo = cleanFileInfo(req.file);
     sendSuccess(res, fileInfo, "Template uploaded successfully", 201);
   }
 );
@@ -32,15 +35,7 @@ export const uploadFontFile = asyncHandler(
       return sendError(res, "No file uploaded", 400);
     }
 
-    const file = req.file;
-    const fileInfo = {
-      fileName: file.filename,
-      originalName: file.originalname,
-      size: file.size,
-      mimetype: file.mimetype,
-      uploadedAt: new Date().toISOString(),
-    };
-
+    const fileInfo = cleanFileInfo(req.file);
     sendSuccess(res, fileInfo, "Font uploaded successfully", 201);
   }
 );

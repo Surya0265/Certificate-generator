@@ -132,7 +132,6 @@ export const generateAndSaveCertificate = asyncHandler(
         message: "Certificate generated and saved successfully",
         data: {
           fileName: certificateFileName,
-          path: returnPath ? filePath : undefined,
           fileSize: pdfBuffer.length,
         },
       });
