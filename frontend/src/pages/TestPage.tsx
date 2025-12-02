@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../services/api";
 import "./TestPage.css";
 
 export const TestPage: React.FC = () => {
@@ -45,7 +46,7 @@ export const TestPage: React.FC = () => {
 
     try {
       setLayoutsLoading(true);
-      const response = await fetch("http://localhost:3001/api/layouts", {
+      const response = await fetch(`${API_BASE_URL}/layouts`, {
         headers: {
           "Authorization": `Bearer ${user?.username}`,
         },
@@ -89,7 +90,7 @@ export const TestPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:3001/api/certificates/generate",
+        `${API_BASE_URL}/certificates/generate`,
         {
           method: "POST",
           headers: {

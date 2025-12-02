@@ -9,6 +9,8 @@ import {
   confirmLayout,
   getLayout,
   updateLayout,
+  API_BASE_URL,
+  BACKEND_BASE_URL,
 } from "../services/api";
 import { TemplateEditor } from "../components/TemplateEditor";
 import { Layout, TextField, CanvasTextField, Font } from "../types";
@@ -18,6 +20,9 @@ import "./LayoutEditor.css";
 // Predefined fields
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PREDEFINED_FIELDS = ["Name", "Event", "College", "Class", "Year"];
+
+const assetUrl = (path: string) =>
+  `${BACKEND_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export const LayoutEditor: React.FC = () => {
   const { layoutId } = useParams<{ layoutId?: string }>();
@@ -47,7 +52,7 @@ export const LayoutEditor: React.FC = () => {
       setLayout(layout);
 
       if (layout.templateFile) {
-        const templateUrl = `http://localhost:3001/uploads/templates/${layout.templateFile}`;
+        const templateUrl = assetUrl(`/uploads/templates/${layout.templateFile}`);
         setTemplateImage(templateUrl);
       }
 
@@ -55,7 +60,7 @@ export const LayoutEditor: React.FC = () => {
       
       // Load all fonts as web fonts for preview
       layout.fonts.forEach((font) => {
-        const fontUrl = `http://localhost:3001/uploads/fonts/${font.file}`;
+        const fontUrl = assetUrl(`/uploads/fonts/${font.file}`);
         const fontFace = new FontFace(font.name, `url('${fontUrl}')`, {
           style: "normal",
           weight: "normal",
@@ -95,9 +100,7 @@ export const LayoutEditor: React.FC = () => {
     try {
       setLoading(true);
       const response = await uploadTemplate(file);
-      setTemplateImage(
-        `http://localhost:3001/uploads/templates/${response.data.fileName}`
-      );
+      setTemplateImage(assetUrl(`/uploads/templates/${response.data.fileName}`));
       toast.success("Template uploaded successfully");
     } catch (error) {
       toast.error("Failed to upload template");
@@ -123,7 +126,7 @@ export const LayoutEditor: React.FC = () => {
       };
       
       // Load font as web font for preview
-      const fontUrl = `http://localhost:3001/uploads/fonts/${response.data.fileName}`;
+      const fontUrl = assetUrl(`/uploads/fonts/${response.data.fileName}`);
       const fontFace = new FontFace(fontName, `url('${fontUrl}')`, {
         style: "normal",
         weight: "normal",
@@ -210,7 +213,7 @@ export const LayoutEditor: React.FC = () => {
       // Check if layout with same name exists
       if (!layout?.layoutId) {
         try {
-          const response = await fetch("http://localhost:3001/api/layouts", {
+          const response = await fetch(`${API_BASE_URL}/layouts`, {
             headers: {
               "Authorization": `Bearer ${currentUser}`,
             },
@@ -330,7 +333,7 @@ export const LayoutEditor: React.FC = () => {
 
       // Delete the existing layout
       await fetch(
-        `http://localhost:3001/api/layouts/${pendingLayoutData.existingLayoutId}`,
+        `${API_BASE_URL}/layouts/${pendingLayoutData.existingLayoutId}`,
         {
           method: "DELETE",
           headers: {
