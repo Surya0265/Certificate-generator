@@ -30,7 +30,7 @@ export const generateCertificate = asyncHandler(
     }
 
     // Load layout
-    const layout = loadLayout(layoutId);
+    const layout = await loadLayout(layoutId);
     if (!layout) {
       return sendError(res, `Layout not found: ${layoutId}`, 404);
     }
@@ -92,7 +92,7 @@ export const generateAndSaveCertificate = asyncHandler(
     }
 
     // Load layout
-    const layout = loadLayout(layoutId);
+    const layout = await loadLayout(layoutId);
     if (!layout) {
       return sendError(res, `Layout not found: ${layoutId}`, 404);
     }

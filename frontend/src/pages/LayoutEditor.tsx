@@ -11,6 +11,8 @@ import {
   updateLayout,
   API_BASE_URL,
   BACKEND_BASE_URL,
+  getPredefinedTemplates,
+  PredefinedTemplate,
 } from "../services/api";
 import { TemplateEditor } from "../components/TemplateEditor";
 import { Layout, TextField, CanvasTextField, Font } from "../types";
@@ -37,13 +39,31 @@ export const LayoutEditor: React.FC = () => {
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingLayoutData, setPendingLayoutData] = useState<any>(null);
+  const [showTemplateSelection, setShowTemplateSelection] = useState(true);
+  const [predefinedTemplates, setPredefinedTemplates] = useState<PredefinedTemplate[]>([]);
+  const [customFieldInput, setCustomFieldInput] = useState("");
 
   // Load existing layout if layoutId provided
   useEffect(() => {
     if (layoutId) {
       loadLayout(layoutId);
+      setShowTemplateSelection(false);
+    } else {
+      loadPredefinedTemplates();
     }
   }, [layoutId]);
+
+  const loadPredefinedTemplates = async () => {
+    try {
+      console.log("Loading predefined templates...");
+      const templates = await getPredefinedTemplates();
+      console.log("Templates loaded:", templates);
+      setPredefinedTemplates(templates);
+    } catch (error) {
+      console.warn("Failed to load predefined templates", error);
+      setPredefinedTemplates([]); // Set empty array so we still show upload option
+    }
+  };
 
   const loadLayout = async (id: string) => {
     try {
@@ -101,9 +121,25 @@ export const LayoutEditor: React.FC = () => {
       setLoading(true);
       const response = await uploadTemplate(file);
       setTemplateImage(assetUrl(`/uploads/templates/${response.data.fileName}`));
+      setShowTemplateSelection(false);
       toast.success("Template uploaded successfully");
     } catch (error) {
       toast.error("Failed to upload template");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectPredefinedTemplate = async (template: PredefinedTemplate) => {
+    try {
+      setLoading(true);
+      const templateUrl = assetUrl(`/uploads/templates/${template.fileName}`);
+      setTemplateImage(templateUrl);
+      setShowTemplateSelection(false);
+      toast.success(`Template "${template.templateName}" selected`);
+    } catch (error) {
+      toast.error("Failed to select template");
       console.error(error);
     } finally {
       setLoading(false);
@@ -393,6 +429,185 @@ export const LayoutEditor: React.FC = () => {
     ? new Date(layout.updatedAt).toLocaleString()
     : "Just now";
 
+  // Template Selection Modal
+  if (showTemplateSelection) {
+    return (
+      <div className="layout-editor-page">
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              padding: "40px",
+              maxWidth: "1000px",
+              width: "90%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow: "0 20px 25px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: "10px", color: "#1f2937", textAlign: "center" }}>
+              Select a Certificate Template
+            </h2>
+            <p style={{ color: "#6b7280", textAlign: "center", marginBottom: "40px", fontSize: "16px" }}>
+              Choose from predefined templates or upload your own
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px" }}>
+              {/* LEFT SIDE: Predefined Templates */}
+              <div>
+                <h3 style={{ color: "#374151", marginBottom: "20px", textAlign: "center" }}>Predefined Templates</h3>
+                {predefinedTemplates.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr",
+                      gap: "15px",
+                    }}
+                  >
+                    {predefinedTemplates.map((template) => (
+                      <div
+                        key={template.templateId}
+                        style={{
+                          border: "2px solid #e5e7eb",
+                          borderRadius: "8px",
+                          padding: "16px",
+                          cursor: "pointer",
+                          transition: "all 0.3s ease",
+                          textAlign: "center",
+                        }}
+                        onClick={() => handleSelectPredefinedTemplate(template)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "#3b82f6";
+                          e.currentTarget.style.backgroundColor = "#eff6ff";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.backgroundColor = "white";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      >
+                        <h4 style={{ margin: "0 0 8px 0", color: "#1f2937", fontSize: "16px", fontWeight: "600" }}>
+                          {template.templateName}
+                        </h4>
+                        {template.description && (
+                          <p style={{ margin: "8px 0", color: "#6b7280", fontSize: "14px" }}>
+                            {template.description}
+                          </p>
+                        )}
+                        <button
+                          style={{
+                            marginTop: "12px",
+                            padding: "10px 20px",
+                            backgroundColor: "#3b82f6",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            width: "100%",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3b82f6")}
+                        >
+                          Select
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "center", color: "#9ca3af", padding: "20px" }}>
+                    <p>No predefined templates available</p>
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT SIDE: Upload Custom Template */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "#f9fafb",
+                  padding: "40px",
+                  borderRadius: "12px",
+                  border: "2px dashed #e5e7eb",
+                  textAlign: "center",
+                  minHeight: "300px",
+                }}
+              >
+                <div style={{ marginBottom: "20px" }}>
+                  <div style={{ fontSize: "48px", marginBottom: "16px", color: "#10b981" }}>📤</div>
+                  <h3 style={{ color: "#374151", marginBottom: "8px", margin: "0 0 8px 0" }}>Upload Your Own</h3>
+                  <p style={{ color: "#6b7280", margin: "0", fontSize: "14px" }}>
+                    Use a custom certificate template
+                  </p>
+                </div>
+
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  onChange={handleTemplateUpload}
+                  disabled={loading}
+                  style={{
+                    display: "none",
+                    cursor: "pointer",
+                  }}
+                  id="template-upload-input"
+                />
+                <label
+                  htmlFor="template-upload-input"
+                  style={{
+                    display: "inline-block",
+                    padding: "14px 28px",
+                    backgroundColor: "#10b981",
+                    color: "white",
+                    borderRadius: "6px",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    border: "none",
+                    transition: "background-color 0.3s ease",
+                    opacity: loading ? 0.7 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) e.currentTarget.style.backgroundColor = "#059669";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) e.currentTarget.style.backgroundColor = "#10b981";
+                  }}
+                >
+                  {loading ? "Uploading..." : "Choose File"}
+                </label>
+
+                <div style={{ marginTop: "20px", color: "#9ca3af", fontSize: "13px" }}>
+                  <p style={{ margin: "0 0 8px 0" }}>Supported formats:</p>
+                  <p style={{ margin: 0 }}>PNG, JPG, JPEG, PDF</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="layout-editor-page">
       <div className="editor-container">
@@ -421,21 +636,7 @@ export const LayoutEditor: React.FC = () => {
           {/* Layout info removed to prevent null reference errors */}
 
           <div className="section">
-            <h3>1. Upload Template</h3>
-            <input
-              type="file"
-              accept=".png,.jpg,.jpeg,.pdf"
-              onChange={handleTemplateUpload}
-              disabled={isConfirmed || loading}
-              className="file-input"
-            />
-            {templateImage && (
-              <p className="success-text">Template loaded</p>
-            )}
-          </div>
-
-          <div className="section">
-            <h3>2. Upload Fonts</h3>
+            <h3>1. Upload Fonts</h3>
             <input
               type="file"
               accept=".ttf"
@@ -455,7 +656,7 @@ export const LayoutEditor: React.FC = () => {
           </div>
 
           <div className="section">
-            <h3>3. Event Name</h3>
+            <h3>2. Event Name</h3>
             <input
               type="text"
               placeholder="e.g., Annual Awards 2024"
@@ -468,7 +669,7 @@ export const LayoutEditor: React.FC = () => {
           </div>
 
           <div className="section">
-            <h3>4. Select Fields</h3>
+            <h3>3. Select Fields</h3>
             <div className="field-list">
               {PREDEFINED_FIELDS.map((fieldName) => (
                 <label

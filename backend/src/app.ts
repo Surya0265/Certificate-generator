@@ -2,16 +2,27 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import path from "path";
 import { ensureDirectories } from "./utils/fileHandler";
+import { connectDatabase } from "./config/database";
 import { errorHandler } from "./middleware/errorHandler";
 import { authMiddleware } from "./middleware/auth";
+
+// Models (ensure they're registered before routes)
+import { PredefinedTemplate } from "./models/PredefinedTemplate";
 
 // Routes
 import authRoutes from "./routes/authRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import layoutRoutes from "./routes/layoutRoutes";
 import certificateRoutes from "./routes/certificateRoutes";
+import templateRoutes from "./routes/templateRoutes";
 
 const app = express();
+
+// Connect to MongoDB
+connectDatabase().catch((error) => {
+  console.error("Failed to connect to MongoDB:", error);
+  process.exit(1);
+});
 
 // Ensure data directories exist
 ensureDirectories();
@@ -50,6 +61,7 @@ app.use("/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/layouts", layoutRoutes);
 app.use("/api/certificates", certificateRoutes);
+app.use("/api/templates", templateRoutes);
 
 // Root route
 app.get("/", (req: Request, res: Response) => {

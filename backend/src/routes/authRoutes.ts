@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import fs from "fs";
-import path from "path";
+import { User } from "../models/User";
+import { asyncHandler, sendSuccess, sendError } from "../middleware/errorHandler";
 
 const router = Router();
 
@@ -11,58 +11,30 @@ interface LoginRequest extends Request {
   };
 }
 
-interface User {
-  username: string;
-  password: string;
-}
-
-// Load users from JSON file
-function loadUsers(): User[] {
-  try {
-    const usersPath = path.join(process.cwd(), "data", "users.json");
-    const data = fs.readFileSync(usersPath, "utf-8");
-    const json = JSON.parse(data);
-    return json.users || [];
-  } catch (error) {
-    console.error("Error loading users:", error);
-    return [];
-  }
-}
-
 /**
  * POST /auth/login
- * Login endpoint with credentials from users.json
+ * Login endpoint with credentials from MongoDB
  */
-router.post("/login", (req: LoginRequest, res: Response) => {
-  const { username, password } = req.body;
+router.post(
+  "/login",
+  asyncHandler(async (req: LoginRequest, res: Response) => {
+    const { username, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({
-      success: false,
-      message: "Username and password required",
-    });
-  }
+    if (!username || !password) {
+      return sendError(res, "Username and password required", 400);
+    }
 
-  // Validate against users from JSON
-  const users = loadUsers();
-  const user = users.find(
-    (u) => u.username === username && u.password === password
-  );
+    // Find user in MongoDB
+    const user = await User.findOne({ username });
 
-  if (user) {
+    if (!user || user.password !== password) {
+      return sendError(res, "Invalid username or password", 401);
+    }
+
     const token = Buffer.from(`${username}:${Date.now()}`).toString("base64");
 
-    res.json({
-      success: true,
-      token,
-      user: { username },
-    });
-  } else {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid username or password",
-    });
-  }
-});
+    sendSuccess(res, { token, user: { username } }, "Login successful");
+  })
+);
 
 export default router;

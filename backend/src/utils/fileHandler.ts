@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { Layout as LayoutModel } from "../models/Layout";
 import { Layout } from "../types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -13,7 +14,6 @@ const CERTIFICATES_DIR = path.join(DATA_DIR, "certificates");
 export function ensureDirectories(): void {
   [
     DATA_DIR,
-    LAYOUTS_DIR,
     UPLOADS_DIR,
     TEMPLATES_DIR,
     FONTS_DIR,
@@ -37,26 +37,41 @@ export function getDirectories() {
   };
 }
 
-// Load layout from JSON file
-export function loadLayout(layoutId: string): Layout | null {
+// Load layout from MongoDB
+export async function loadLayout(layoutId: string): Promise<Layout | null> {
   try {
-    const filePath = path.join(LAYOUTS_DIR, `${layoutId}.json`);
-    if (!fs.existsSync(filePath)) {
+    const layout = await LayoutModel.findOne({ layoutId });
+    if (!layout) {
       return null;
     }
-    const data = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(data);
+    const layoutObj = layout.toObject();
+    return {
+      ...layoutObj,
+      createdAt: layoutObj.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: layoutObj.updatedAt?.toISOString() || new Date().toISOString(),
+    } as unknown as Layout;
   } catch (error) {
     console.error(`Error loading layout ${layoutId}:`, error);
     return null;
   }
 }
 
-// Save layout to JSON file
-export function saveLayout(layout: Layout): boolean {
+// Save layout to MongoDB
+export async function saveLayout(layout: Layout): Promise<boolean> {
   try {
-    const filePath = path.join(LAYOUTS_DIR, `${layout.layoutId}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(layout, null, 2), "utf-8");
+    await LayoutModel.findOneAndUpdate(
+      { layoutId: layout.layoutId },
+      {
+        layoutName: layout.layoutName,
+        templateFile: layout.templateFile,
+        fonts: layout.fonts,
+        fields: layout.fields,
+        confirmed: layout.confirmed,
+        createdBy: layout.createdBy,
+        updatedAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
     return true;
   } catch (error) {
     console.error(`Error saving layout:`, error);
@@ -65,21 +80,14 @@ export function saveLayout(layout: Layout): boolean {
 }
 
 // List all layouts
-export function listLayouts(): Layout[] {
+export async function listLayouts(): Promise<Layout[]> {
   try {
-    const files = fs.readdirSync(LAYOUTS_DIR);
-    const layouts: Layout[] = [];
-
-    files.forEach((file) => {
-      if (file.endsWith(".json")) {
-        const layout = loadLayout(file.replace(".json", ""));
-        if (layout) {
-          layouts.push(layout);
-        }
-      }
-    });
-
-    return layouts;
+    const layouts = await LayoutModel.find({}).lean();
+    return layouts.map((layout: any) => ({
+      ...layout,
+      createdAt: layout.createdAt?.toISOString?.() || new Date().toISOString(),
+      updatedAt: layout.updatedAt?.toISOString?.() || new Date().toISOString(),
+    })) as unknown as Layout[];
   } catch (error) {
     console.error("Error listing layouts:", error);
     return [];
@@ -87,14 +95,10 @@ export function listLayouts(): Layout[] {
 }
 
 // Delete layout
-export function deleteLayout(layoutId: string): boolean {
+export async function deleteLayout(layoutId: string): Promise<boolean> {
   try {
-    const filePath = path.join(LAYOUTS_DIR, `${layoutId}.json`);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      return true;
-    }
-    return false;
+    const result = await LayoutModel.findOneAndDelete({ layoutId });
+    return !!result;
   } catch (error) {
     console.error(`Error deleting layout:`, error);
     return false;

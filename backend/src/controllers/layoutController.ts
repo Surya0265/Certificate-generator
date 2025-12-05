@@ -85,7 +85,7 @@ export const saveLayoutConfig = asyncHandler(
       createdBy: createdBy || req.user?.username,
     };
 
-    const saved = saveLayout(layout);
+    const saved = await saveLayout(layout);
     if (!saved) {
       return sendError(res, "Failed to save layout", 500);
     }
@@ -106,7 +106,7 @@ export const confirmLayout = asyncHandler(
       return sendError(res, "Layout ID is required", 400);
     }
 
-    const layout = loadLayout(layoutId);
+    const layout = await loadLayout(layoutId);
     if (!layout) {
       return sendError(res, "Layout not found", 404);
     }
@@ -114,7 +114,7 @@ export const confirmLayout = asyncHandler(
     layout.confirmed = true;
     layout.updatedAt = new Date().toISOString();
 
-    const saved = saveLayout(layout);
+    const saved = await saveLayout(layout);
     if (!saved) {
       return sendError(res, "Failed to confirm layout", 500);
     }
@@ -133,7 +133,7 @@ export const getLayout = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, "Layout ID is required", 400);
   }
 
-  const layout = loadLayout(layoutId);
+  const layout = await loadLayout(layoutId);
   if (!layout) {
     return sendError(res, "Layout not found", 404);
   }
@@ -146,7 +146,7 @@ export const getLayout = asyncHandler(async (req: Request, res: Response) => {
  */
 export const getAllLayouts = asyncHandler(
   async (req: Request, res: Response) => {
-    const layouts = listLayouts();
+    const layouts = await listLayouts();
     const cleanedLayouts = layouts.map(cleanLayout);
     sendSuccess(
       res,
@@ -168,7 +168,7 @@ export const removeLayout = asyncHandler(
       return sendError(res, "Layout ID is required", 400);
     }
 
-    const layout = loadLayout(layoutId);
+    const layout = await loadLayout(layoutId);
     if (!layout) {
       return sendError(res, "Layout not found", 404);
     }
@@ -181,7 +181,7 @@ export const removeLayout = asyncHandler(
       );
     }
 
-    const deleted = deleteLayout(layoutId);
+    const deleted = await deleteLayout(layoutId);
     if (!deleted) {
       return sendError(res, "Failed to delete layout", 500);
     }
@@ -202,7 +202,7 @@ export const updateLayout = asyncHandler(
       return sendError(res, "Layout ID is required", 400);
     }
 
-    const layout = loadLayout(layoutId);
+    const layout = await loadLayout(layoutId);
     if (!layout) {
       return sendError(res, "Layout not found", 404);
     }
@@ -237,7 +237,7 @@ export const updateLayout = asyncHandler(
     }
 
     layout.updatedAt = new Date().toISOString();
-    const saved = saveLayout(layout);
+    const saved = await saveLayout(layout);
     if (!saved) {
       return sendError(res, "Failed to update layout", 500);
     }

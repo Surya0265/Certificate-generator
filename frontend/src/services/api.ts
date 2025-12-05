@@ -123,3 +123,22 @@ export const downloadCertificate = async (fileName: string): Promise<Blob> => {
   );
   return response.data;
 };
+
+// Template Services
+export interface PredefinedTemplate {
+  templateId: string;
+  templateName: string;
+  description?: string;
+  fileName: string;
+  category?: string;
+}
+
+export const getPredefinedTemplates = async (): Promise<PredefinedTemplate[]> => {
+  const response = await axiosInstance.get("/templates");
+  return response.data.data;
+};
+
+export const getPredefinedTemplate = async (templateId: string): Promise<PredefinedTemplate> => {
+  const response = await axiosInstance.get(`/templates/${templateId}`);
+  return response.data.data;
+};
