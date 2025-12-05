@@ -553,7 +553,7 @@ export const LayoutEditor: React.FC = () => {
                 }}
               >
                 <div style={{ marginBottom: "20px" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px", color: "#10b981" }}>📤</div>
+                  
                   <h3 style={{ color: "#374151", marginBottom: "8px", margin: "0 0 8px 0" }}>Upload Your Own</h3>
                   <p style={{ color: "#6b7280", margin: "0", fontSize: "14px" }}>
                     Use a custom certificate template
@@ -597,8 +597,8 @@ export const LayoutEditor: React.FC = () => {
                 </label>
 
                 <div style={{ marginTop: "20px", color: "#9ca3af", fontSize: "13px" }}>
-                  <p style={{ margin: "0 0 8px 0" }}>Supported formats:</p>
-                  <p style={{ margin: 0 }}>PNG, JPG, JPEG, PDF</p>
+                  <p style={{ margin: "0 0 8px 0" }}>Supported format</p>
+                  <p style={{ margin: 0 }}>PDF</p>
                 </div>
               </div>
             </div>
@@ -634,6 +634,32 @@ export const LayoutEditor: React.FC = () => {
           </div>
 
           {/* Layout info removed to prevent null reference errors */}
+
+          <div className="section">
+            <h3>Change Template</h3>
+            <button
+              onClick={() => {
+                setTemplateImage("");
+                setShowTemplateSelection(true);
+              }}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                backgroundColor: "#f59e0b",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "15px",
+                fontWeight: "500",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#d97706")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f59e0b")}
+            >
+              Select Different Template
+            </button>
+          </div>
 
           <div className="section">
             <h3>1. Upload Fonts</h3>
