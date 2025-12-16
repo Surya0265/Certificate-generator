@@ -2,10 +2,11 @@ node_modules/
 dist/
 .env
 .env.local
-uploads/
-templates/
-fonts/
-layouts/
-certificates/
+
+# Ignore generated certificates (dynamic)
+data/certificates/
+
+
+
 *.log
 .DS_Store
