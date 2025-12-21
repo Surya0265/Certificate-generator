@@ -36,47 +36,65 @@ function resolveFontPath(
 
 /**
  * Calculate auto-adjusted font size based on text length
- * For Name and College fields only
+ * 
+ * College: Always 25px, 35 char limit, complex reduction tiers
+ * Other fields: Use DB font size, 30 char limit, simple proportional reduction
  */
 function calculateAdaptiveFontSize(
   fieldName: string,
   text: string,
   baseFontSize: number
 ): number {
-  // Only apply to Name and College fields
-  if (fieldName === "Name") {
-    // adjustText logic: max 35 chars, base 25px, min 18px
-    const maxLength = 35;
-    const minSize = 18;
-    return text.length > maxLength
-      ? Math.max(baseFontSize - (text.length - maxLength) * 1.2, minSize)
-      : baseFontSize;
-  }
-
   if (fieldName === "College") {
-    // adjustCollege logic based on length ranges
+    // ALWAYS use 25px for College (ignore baseFontSize from DB)
+    const collegeFontSize = 25;
     const collegeLength = text.length;
-    let adjustedSize = baseFontSize;
+    const maxLength = 30;
 
-    if (collegeLength >= 40 && collegeLength < 49) {
-      // adjustCollege: max 35, base 24, min 18
-      adjustedSize = Math.max(baseFontSize - (collegeLength - 35) * 0.8, 18);
-    } else if (collegeLength >= 49 && collegeLength < 60) {
-      // adjustCollege: max 15, base 24, min 14
-      adjustedSize = Math.max(baseFontSize - (collegeLength - 15) * 0.8, 14);
-    } else if (collegeLength >= 60 && collegeLength < 70) {
-      // adjustagainCollege: max 12, base 24, min 11
-      adjustedSize = Math.max(baseFontSize - (collegeLength - 12) * 1.2, 11);
-    } else if (collegeLength >= 70) {
-      // adjustCollege: max 35, base 24, min 9
-      adjustedSize = Math.max(baseFontSize - (collegeLength - 35) * 0.8, 9);
+    // If fits within 30 chars, use 25px
+    if (collegeLength <= maxLength) {
+      return collegeFontSize;
+    }
+
+    // Apply aggressive tiered reduction for College (baseline: 30 chars)
+    const excess = collegeLength - maxLength;
+    let adjustedSize = collegeFontSize;
+
+    if (excess <= 10) {
+      // 31-40 chars: moderate reduction
+      adjustedSize = Math.max(collegeFontSize - excess * 1.0, 16);
+    } else if (excess <= 20) {
+      // 41-50 chars: stronger reduction
+      adjustedSize = Math.max(collegeFontSize - excess * 1.1, 13);
+    } else if (excess <= 30) {
+      // 51-60 chars: aggressive reduction
+      adjustedSize = Math.max(collegeFontSize - excess * 1.2, 10);
+    } else {
+      // 61+ chars: very aggressive
+      adjustedSize = Math.max(collegeFontSize - excess * 1.3, 8);
     }
 
     return adjustedSize;
   }
 
-  // For other fields, use base font size
-  return baseFontSize;
+  // For all other fields (Name, Event, etc.)
+  const maxLength = 30;
+  const textLength = text.length;
+
+  // If text fits, use DB font size
+  if (textLength <= maxLength) {
+    return baseFontSize;
+  }
+
+  // Proportional reduction
+  const excessChars = textLength - maxLength;
+  const reductionFactor = baseFontSize / maxLength;
+  const adjustedSize = baseFontSize - (excessChars * reductionFactor);
+
+  // Minimum: 60% of base size or 10px
+  const minSize = Math.max(baseFontSize * 0.6, 10);
+
+  return Math.max(adjustedSize, minSize);
 }
 
 /**
@@ -142,14 +160,18 @@ async function generateFromPdfTemplate(
       continue;
     }
 
+    // Get the original base font size for Y positioning
+    const baseFontSize = field.fontSize || 24;
+
     // Calculate adaptive font size based on text length
     const adaptiveFontSize = calculateAdaptiveFontSize(
       field.name,
       textValue,
-      field.fontSize || 24
+      baseFontSize
     );
 
     const scaledFontSize = adaptiveFontSize * scaleRatio;
+    const scaledBaseFontSize = baseFontSize * scaleRatio; // Use original size for Y positioning
     const scaledX = (field.x || 0) * scaleRatio;
     const scaledYFromTop = (field.y || 0) * scaleRatio;
     let drawX = scaledX;
@@ -162,7 +184,8 @@ async function generateFromPdfTemplate(
       drawX = drawX - textWidth;
     }
 
-    const drawY = pageHeight - scaledYFromTop - scaledFontSize;
+    // Use base font size for Y calculation to maintain consistent baseline position
+    const drawY = pageHeight - scaledYFromTop - scaledBaseFontSize;
     const colorRgb = parseColor(field.color);
 
     page.drawText(textValue, {

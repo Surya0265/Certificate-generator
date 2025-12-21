@@ -1,34 +1,56 @@
-version: '3.8'
-
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: certificate-backend:latest
+    container_name: certificate-backend
+    restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=3001
-      - CORS_ORIGIN=http://localhost:3000
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - MONGODB_URI=${MONGODB_URI:-}
     volumes:
       - ./backend/data:/app/data
+      - backend-logs:/app/logs
     networks:
       - certificate-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: certificate-frontend:latest
+    container_name: certificate-frontend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://backend:3001
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3001}
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     networks:
       - certificate-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   certificate-network:
     driver: bridge
+
+volumes:
+  backend-logs:
