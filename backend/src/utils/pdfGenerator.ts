@@ -154,15 +154,15 @@ async function generateFromPdfTemplate(
   if (layout.fonts.length > 0) {
     const firstFont = layout.fonts[0];
     const fontPath = getFontPath(firstFont.file);
-    console.log(`[PDF] Attempting to load font: ${firstFont.name} from ${fontPath}`);
+
 
     if (fs.existsSync(fontPath)) {
       try {
         const fontBytes = fs.readFileSync(fontPath);
-        console.log(`[PDF] Font bytes read: ${fontBytes.length}`);
+
 
         defaultFont = await outputDoc.embedFont(fontBytes, { subset: true });
-        console.log(`[PDF] Font embedded successfully: ${firstFont.name}`);
+
       } catch (err) {
         console.error(`[PDF] Failed to embed font ${firstFont.name}:`, err);
         // Do not fallback immediately, let it fall through to default check
@@ -174,7 +174,7 @@ async function generateFromPdfTemplate(
 
   // Fallback to standard font if no custom font
   if (!defaultFont) {
-    console.log("[PDF] Using fallback Helvetica font");
+
     defaultFont = await outputDoc.embedFont(StandardFonts.Helvetica);
   }
 
