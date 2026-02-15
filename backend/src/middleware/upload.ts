@@ -69,10 +69,16 @@ const fontFileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  if (file.mimetype === "font/ttf" || file.originalname.endsWith(".ttf")) {
+  const isTTF =
+    file.mimetype === "font/ttf" ||
+    file.mimetype === "application/x-font-ttf" ||
+    file.mimetype === "application/octet-stream" ||
+    file.originalname.toLowerCase().endsWith(".ttf");
+
+  if (isTTF) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only TTF fonts are allowed."));
+    cb(new Error(`Invalid file type. Only TTF fonts are allowed. Received: ${file.mimetype}, filename: ${file.originalname}`));
   }
 };
 

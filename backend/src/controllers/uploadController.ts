@@ -18,9 +18,11 @@ const cleanFileInfo = (file: any) => {
 export const uploadTemplateFile = asyncHandler(
   async (req: Request, res: Response) => {
     if (!req.file) {
+      console.error("Template upload failed: No file in request");
       return sendError(res, "No file uploaded", 400);
     }
 
+    console.log(`Template uploaded successfully: ${req.file.filename} (${req.file.size} bytes)`);
     const fileInfo = cleanFileInfo(req.file);
     sendSuccess(res, fileInfo, "Template uploaded successfully", 201);
   }
@@ -32,9 +34,11 @@ export const uploadTemplateFile = asyncHandler(
 export const uploadFontFile = asyncHandler(
   async (req: Request, res: Response) => {
     if (!req.file) {
+      console.error("Font upload failed: No file in request");
       return sendError(res, "No file uploaded", 400);
     }
 
+    console.log(`Font uploaded successfully: ${req.file.filename} (${req.file.size} bytes)`);
     const fileInfo = cleanFileInfo(req.file);
     sendSuccess(res, fileInfo, "Font uploaded successfully", 201);
   }

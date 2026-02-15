@@ -29,10 +29,32 @@ export const generateCertificate = asyncHandler(
       return sendError(res, "Data must be a non-empty object", 400);
     }
 
-    // Load layout
-    const layout = await loadLayout(layoutId);
+    // Load layout - try exact match first, then case-insensitive
+    let layout = await loadLayout(layoutId);
+
+    // If not found, try case-insensitive search
     if (!layout) {
-      return sendError(res, `Layout not found: ${layoutId}`, 404);
+      const { getDirectories } = await import("../utils/fileHandler");
+      const { LAYOUTS_DIR } = getDirectories();
+      const fs = await import("fs");
+      const path = await import("path");
+
+      if (fs.existsSync(LAYOUTS_DIR)) {
+        const files = fs.readdirSync(LAYOUTS_DIR);
+        const matchingFile = files.find(
+          (file) => file.toLowerCase() === `${layoutId.toLowerCase()}.json`
+        );
+
+        if (matchingFile) {
+          const actualLayoutId = matchingFile.replace(".json", "");
+          layout = await loadLayout(actualLayoutId);
+        }
+      }
+    }
+
+    if (!layout) {
+      console.error(`Layout not found: ${layoutId}`);
+      return sendError(res, `Layout not found: ${layoutId}. Please check the layout name and try again.`, 404);
     }
 
     if (!layout.confirmed) {
@@ -91,10 +113,32 @@ export const generateAndSaveCertificate = asyncHandler(
       return sendError(res, "Data must be a non-empty object", 400);
     }
 
-    // Load layout
-    const layout = await loadLayout(layoutId);
+    // Load layout - try exact match first, then case-insensitive
+    let layout = await loadLayout(layoutId);
+
+    // If not found, try case-insensitive search
     if (!layout) {
-      return sendError(res, `Layout not found: ${layoutId}`, 404);
+      const { getDirectories } = await import("../utils/fileHandler");
+      const { LAYOUTS_DIR } = getDirectories();
+      const fs = await import("fs");
+      const path = await import("path");
+
+      if (fs.existsSync(LAYOUTS_DIR)) {
+        const files = fs.readdirSync(LAYOUTS_DIR);
+        const matchingFile = files.find(
+          (file) => file.toLowerCase() === `${layoutId.toLowerCase()}.json`
+        );
+
+        if (matchingFile) {
+          const actualLayoutId = matchingFile.replace(".json", "");
+          layout = await loadLayout(actualLayoutId);
+        }
+      }
+    }
+
+    if (!layout) {
+      console.error(`Layout not found: ${layoutId}`);
+      return sendError(res, `Layout not found: ${layoutId}. Please check the layout name and try again.`, 404);
     }
 
     if (!layout.confirmed) {
