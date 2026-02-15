@@ -45,40 +45,46 @@ function calculateAdaptiveFontSize(
   text: string,
   baseFontSize: number
 ): number {
+  const isUpperCase = text === text.toUpperCase() && /[A-Z]/.test(text);
+
   if (fieldName === "College") {
     // ALWAYS use 25px for College (ignore baseFontSize from DB)
     const collegeFontSize = 25;
     const collegeLength = text.length;
-    const maxLength = 30;
+    // Reduce threshold if uppercase (caps take up more width)
+    const maxLength = isUpperCase ? 25 : 30;
 
-    // If fits within 30 chars, use 25px
+    // If fits within limit, use 25px
     if (collegeLength <= maxLength) {
       return collegeFontSize;
     }
 
-    // Apply aggressive tiered reduction for College (baseline: 30 chars)
+    // Apply aggressive tiered reduction for College
     const excess = collegeLength - maxLength;
     let adjustedSize = collegeFontSize;
 
+    // Apply stronger reduction for uppercase
+    const severity = isUpperCase ? 1.3 : 1.0;
+
     if (excess <= 10) {
-      // 31-40 chars: moderate reduction
-      adjustedSize = Math.max(collegeFontSize - excess * 1.0, 16);
+      // 31-40 chars (or 26-35 for caps): moderate reduction
+      adjustedSize = Math.max(collegeFontSize - excess * (1.0 * severity), 16);
     } else if (excess <= 20) {
       // 41-50 chars: stronger reduction
-      adjustedSize = Math.max(collegeFontSize - excess * 1.1, 13);
+      adjustedSize = Math.max(collegeFontSize - excess * (1.1 * severity), 13);
     } else if (excess <= 30) {
       // 51-60 chars: aggressive reduction
-      adjustedSize = Math.max(collegeFontSize - excess * 1.2, 10);
+      adjustedSize = Math.max(collegeFontSize - excess * (1.2 * severity), 10);
     } else {
       // 61+ chars: very aggressive
-      adjustedSize = Math.max(collegeFontSize - excess * 1.3, 8);
+      adjustedSize = Math.max(collegeFontSize - excess * (1.3 * severity), 8);
     }
 
     return adjustedSize;
   }
 
   // For all other fields (Name, Event, etc.)
-  const maxLength = 30;
+  const maxLength = isUpperCase ? 25 : 30;
   const textLength = text.length;
 
   // If text fits, use DB font size
@@ -88,7 +94,12 @@ function calculateAdaptiveFontSize(
 
   // Proportional reduction
   const excessChars = textLength - maxLength;
-  const reductionFactor = baseFontSize / maxLength;
+  let reductionFactor = baseFontSize / maxLength;
+
+  if (isUpperCase) {
+    reductionFactor *= 1.5; // 50% more aggressive per char for uppercase
+  }
+
   const adjustedSize = baseFontSize - (excessChars * reductionFactor);
 
   // Minimum: 60% of base size or 10px
@@ -184,11 +195,19 @@ async function generateFromPdfTemplate(
     );
 
     // Special handling for Name/Event specifically for long names
-    if ((field.name === "Name" || field.name === "Event") && textValue.length > 20) {
+    // Check for uppercase and apply different thresholds
+    const isUpperCase = textValue === textValue.toUpperCase() && /[A-Z]/.test(textValue);
+    const threshold = isUpperCase ? 15 : 20;
+
+    if ((field.name === "Name" || field.name === "Event") && textValue.length > threshold) {
       // Even smoother reduction for names/events
-      const excess = textValue.length - 20;
-      // Reduce by 0.5px per character over 20
-      adaptiveFontSize = Math.max(baseFontSize - excess * 0.8, 12);
+      const excess = textValue.length - threshold;
+
+      // Reduce by 0.8px per character over 20 normally, much more if uppercase (2.0)
+      // "DHAARUN ABHIMANYU S" is 19 chars. Excess = 4. Reduction = 8px.
+      const reductionPerChar = isUpperCase ? 2.0 : 0.8;
+
+      adaptiveFontSize = Math.max(baseFontSize - excess * reductionPerChar, 12);
     }
 
     const scaledFontSize = adaptiveFontSize * scaleRatio;
