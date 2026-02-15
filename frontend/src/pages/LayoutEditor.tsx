@@ -77,15 +77,18 @@ export const LayoutEditor: React.FC = () => {
       }
 
       setFonts(layout.fonts);
-      
+
       // Load all fonts as web fonts for preview
       layout.fonts.forEach((font) => {
         const fontUrl = assetUrl(`/uploads/fonts/${font.file}`);
-        const fontFace = new FontFace(font.name, `url('${fontUrl}')`, {
+        const isOtf = font.file.toLowerCase().endsWith(".otf");
+        const format = isOtf ? "opentype" : "truetype";
+
+        const fontFace = new FontFace(font.name, `url('${fontUrl}') format('${format}')`, {
           style: "normal",
           weight: "normal",
         });
-        
+
         fontFace.load().then((loadedFont) => {
           document.fonts.add(loadedFont);
           console.log(`Font loaded: ${font.name}`);
@@ -93,7 +96,7 @@ export const LayoutEditor: React.FC = () => {
           console.warn(`Font load warning: ${font.name}`, error);
         });
       });
-      
+
       setFields(
         layout.fields.map((f: TextField, idx: number) => ({
           ...f,
@@ -160,21 +163,24 @@ export const LayoutEditor: React.FC = () => {
         name: fontName,
         file: response.data.fileName,
       };
-      
+
       // Load font as web font for preview
       const fontUrl = assetUrl(`/uploads/fonts/${response.data.fileName}`);
-      const fontFace = new FontFace(fontName, `url('${fontUrl}')`, {
+      const isOtf = response.data.fileName.toLowerCase().endsWith(".otf");
+      const format = isOtf ? "opentype" : "truetype";
+
+      const fontFace = new FontFace(fontName, `url('${fontUrl}') format('${format}')`, {
         style: "normal",
         weight: "normal",
       });
-      
+
       fontFace.load().then((loadedFont) => {
         document.fonts.add(loadedFont);
         console.log(`Font loaded: ${fontName}`);
       }).catch((error) => {
         console.warn(`Font load warning: ${fontName}`, error);
       });
-      
+
       setFonts([...fonts, newFont]);
       toast.success("Font uploaded successfully");
     } catch (error) {
@@ -303,12 +309,57 @@ export const LayoutEditor: React.FC = () => {
       setLoading(true);
       const templateFileName = templateImage.split("/").pop() || "template.png";
 
+      // Sync font name with layout name
+      let currentFonts = [...fonts];
+      let currentFields = [...fields];
+
+      if (currentFonts.length > 0 && eventName.trim()) {
+        const primaryFont = currentFonts[0];
+        const oldName = primaryFont.name;
+        const newName = eventName.trim();
+
+        if (oldName !== newName) {
+          // Update font definition
+          currentFonts[0] = { ...primaryFont, name: newName };
+
+          // Update field references
+          currentFields = currentFields.map((field) => {
+            if (field.fontFamily === oldName) {
+              return { ...field, fontFamily: newName };
+            }
+            return field;
+          });
+
+          // Re-register the font with the new name for the browser
+          const fontUrl = assetUrl(`/uploads/fonts/${primaryFont.file}`);
+          const isOtf = primaryFont.file.toLowerCase().endsWith(".otf");
+          const format = isOtf ? "opentype" : "truetype";
+
+          const fontFace = new FontFace(newName, `url('${fontUrl}') format('${format}')`, {
+            style: "normal",
+            weight: "normal",
+          });
+
+          try {
+            const loadedFont = await fontFace.load();
+            document.fonts.add(loadedFont);
+            console.log(`Renamed font loaded: ${newName}`);
+          } catch (error) {
+            console.warn(`Failed to reload renamed font: ${newName}`, error);
+          }
+
+          // Update state to match saved data
+          setFonts(currentFonts);
+          setFields(currentFields);
+        }
+      }
+
       const layoutData = {
         layoutId: layout?.layoutId,
         layoutName: eventName,
         templateFile: templateFileName,
-        fonts,
-        fields: fields.map((f) => ({
+        fonts: currentFonts,
+        fields: currentFields.map((f) => ({
           name: f.name,
           x: f.x,
           y: f.y,
@@ -553,7 +604,7 @@ export const LayoutEditor: React.FC = () => {
                 }}
               >
                 <div style={{ marginBottom: "20px" }}>
-                  
+
                   <h3 style={{ color: "#374151", marginBottom: "8px", margin: "0 0 8px 0" }}>Upload Your Own</h3>
                   <p style={{ color: "#6b7280", margin: "0", fontSize: "14px" }}>
                     Use a custom certificate template
@@ -665,7 +716,7 @@ export const LayoutEditor: React.FC = () => {
             <h3>1. Upload Fonts</h3>
             <input
               type="file"
-              accept=".ttf"
+              accept=".ttf,.otf"
               onChange={handleFontUpload}
               disabled={isConfirmed || loading}
               className="file-input"

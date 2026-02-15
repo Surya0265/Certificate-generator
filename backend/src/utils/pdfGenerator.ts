@@ -143,14 +143,27 @@ async function generateFromPdfTemplate(
   if (layout.fonts.length > 0) {
     const firstFont = layout.fonts[0];
     const fontPath = getFontPath(firstFont.file);
+    console.log(`[PDF] Attempting to load font: ${firstFont.name} from ${fontPath}`);
+
     if (fs.existsSync(fontPath)) {
-      const fontBytes = fs.readFileSync(fontPath);
-      defaultFont = await outputDoc.embedFont(fontBytes, { subset: true });
+      try {
+        const fontBytes = fs.readFileSync(fontPath);
+        console.log(`[PDF] Font bytes read: ${fontBytes.length}`);
+
+        defaultFont = await outputDoc.embedFont(fontBytes, { subset: true });
+        console.log(`[PDF] Font embedded successfully: ${firstFont.name}`);
+      } catch (err) {
+        console.error(`[PDF] Failed to embed font ${firstFont.name}:`, err);
+        // Do not fallback immediately, let it fall through to default check
+      }
+    } else {
+      console.warn(`[PDF] Font file not found at path: ${fontPath}`);
     }
   }
 
   // Fallback to standard font if no custom font
   if (!defaultFont) {
+    console.log("[PDF] Using fallback Helvetica font");
     defaultFont = await outputDoc.embedFont(StandardFonts.Helvetica);
   }
 
@@ -164,11 +177,19 @@ async function generateFromPdfTemplate(
     const baseFontSize = field.fontSize || 24;
 
     // Calculate adaptive font size based on text length
-    const adaptiveFontSize = calculateAdaptiveFontSize(
+    let adaptiveFontSize = calculateAdaptiveFontSize(
       field.name,
       textValue,
       baseFontSize
     );
+
+    // Special handling for Name/Event specifically for long names
+    if ((field.name === "Name" || field.name === "Event") && textValue.length > 20) {
+      // Even smoother reduction for names/events
+      const excess = textValue.length - 20;
+      // Reduce by 0.5px per character over 20
+      adaptiveFontSize = Math.max(baseFontSize - excess * 0.8, 12);
+    }
 
     const scaledFontSize = adaptiveFontSize * scaleRatio;
     const scaledBaseFontSize = baseFontSize * scaleRatio; // Use original size for Y positioning
@@ -177,11 +198,14 @@ async function generateFromPdfTemplate(
     let drawX = scaledX;
 
     const textWidth = defaultFont.widthOfTextAtSize(textValue, scaledFontSize);
-    let alignment = field.alignment || "left";
+    const alignment = field.alignment || "left";
 
-    // Force center alignment for "infinitum" layout
-    if (layout.layoutName?.toLowerCase() === "infinitum") {
-      alignment = "center";
+    // Adjust X position for long names/events to "start from left too" (shift left to center/balance)
+    if ((field.name === "Name" || field.name === "Event") && textValue.length > 20) {
+      // Shift left by a larger amount proportional to excess length
+      // e.g. shift 5px left per excess char
+      const shiftAmount = (textValue.length - 20) * 5 * scaleRatio;
+      drawX = drawX - shiftAmount;
     }
 
     if (alignment === "center") {
@@ -192,11 +216,12 @@ async function generateFromPdfTemplate(
 
     // Use base font size for Y calculation to maintain consistent baseline position
     const drawY = pageHeight - scaledYFromTop - scaledBaseFontSize;
+    let colorRgb = parseColor(field.color);
 
-    // Force white color for "infinitum" layout
-    const isInfinitumLayout = layout.layoutName?.toLowerCase() === "infinitum";
-    const colorToUse = isInfinitumLayout ? "#FFFFFF" : field.color;
-    const colorRgb = parseColor(colorToUse);
+    // Force white text for Infinitum templates
+    if (layout.templateFile.toLowerCase().includes("infinitum")) {
+      colorRgb = rgb(1, 1, 1);
+    }
 
     page.drawText(textValue, {
       x: drawX,
@@ -334,20 +359,10 @@ function addTextToDocument(
 
     // Set text properties
     doc.fontSize(adaptiveFontSize);
-
-    // Force white color for "infinitum" layout
-    const isInfinitumLayout = layout.layoutName?.toLowerCase() === "infinitum";
-    const colorToUse = isInfinitumLayout ? "#FFFFFF" : (field.color || "#000000");
-
-    doc.fillColor(colorToUse);
+    doc.fillColor(field.color || "#000000");
 
     // Determine text alignment
-    let alignment: "left" | "center" | "right" = field.alignment || "left";
-
-    // Force center alignment for "infinitum" layout
-    if (layout.layoutName?.toLowerCase() === "infinitum") {
-      alignment = "center";
-    }
+    const alignment: "left" | "center" | "right" = field.alignment || "left";
 
     // Add text to document
     doc.text(text, field.x, field.y, {

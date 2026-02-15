@@ -53,11 +53,11 @@ export const TestPage: React.FC = () => {
       });
       if (!response.ok) throw new Error("Failed to fetch layouts");
       const data = await response.json();
-      const confirmedLayouts = (data.data || []).filter((l: any) => 
+      const confirmedLayouts = (data.data || []).filter((l: any) =>
         l.confirmed && l.createdBy === user?.username
       );
       setLayouts(confirmedLayouts);
-      
+
       if (confirmedLayouts.length > 0) {
         setSelectedLayout(confirmedLayouts[0].layoutId);
       }
@@ -108,18 +108,11 @@ export const TestPage: React.FC = () => {
         throw new Error(error.message || "Failed to generate certificate");
       }
 
-      // Get filename from content-disposition header
-      const contentDisposition = response.headers.get("content-disposition");
-      const headerFileName =
-        response.headers.get("X-Certificate-Filename") ||
-        response.headers.get("x-certificate-filename");
-      let fileName = headerFileName || "certificate.pdf";
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="?([^"]+)"?/);
-        if (match) {
-          fileName = match[1];
-        }
-      }
+      // Construct filename from input data
+      const participantName = testData.Name || "Participant";
+      // Try to find an event name field in the test data, otherwise fallback to layout name
+      const eventName = testData.Event || selectedLayoutData?.layoutName || "Event";
+      const fileName = `${participantName} - ${eventName}.pdf`;
 
       // Download PDF
       const blob = await response.blob();
