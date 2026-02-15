@@ -177,7 +177,13 @@ async function generateFromPdfTemplate(
     let drawX = scaledX;
 
     const textWidth = defaultFont.widthOfTextAtSize(textValue, scaledFontSize);
-    const alignment = field.alignment || "left";
+    let alignment = field.alignment || "left";
+
+    // Force center alignment for "infinitum" layout
+    if (layout.layoutName?.toLowerCase() === "infinitum") {
+      alignment = "center";
+    }
+
     if (alignment === "center") {
       drawX = drawX - textWidth / 2;
     } else if (alignment === "right") {
@@ -186,7 +192,11 @@ async function generateFromPdfTemplate(
 
     // Use base font size for Y calculation to maintain consistent baseline position
     const drawY = pageHeight - scaledYFromTop - scaledBaseFontSize;
-    const colorRgb = parseColor(field.color);
+
+    // Force white color for "infinitum" layout
+    const isInfinitumLayout = layout.layoutName?.toLowerCase() === "infinitum";
+    const colorToUse = isInfinitumLayout ? "#FFFFFF" : field.color;
+    const colorRgb = parseColor(colorToUse);
 
     page.drawText(textValue, {
       x: drawX,
@@ -324,10 +334,20 @@ function addTextToDocument(
 
     // Set text properties
     doc.fontSize(adaptiveFontSize);
-    doc.fillColor(field.color || "#000000");
+
+    // Force white color for "infinitum" layout
+    const isInfinitumLayout = layout.layoutName?.toLowerCase() === "infinitum";
+    const colorToUse = isInfinitumLayout ? "#FFFFFF" : (field.color || "#000000");
+
+    doc.fillColor(colorToUse);
 
     // Determine text alignment
-    const alignment: "left" | "center" | "right" = field.alignment || "left";
+    let alignment: "left" | "center" | "right" = field.alignment || "left";
+
+    // Force center alignment for "infinitum" layout
+    if (layout.layoutName?.toLowerCase() === "infinitum") {
+      alignment = "center";
+    }
 
     // Add text to document
     doc.text(text, field.x, field.y, {
